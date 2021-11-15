@@ -3,8 +3,8 @@ package database
 import (
 	"fmt"
 
-	"github.com/allinbits/demeris-backend/models"
-	dbutils "github.com/allinbits/demeris-backend/utils/database"
+	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
+	dbutils "github.com/allinbits/emeris-rpcwatcher/utils/database"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
@@ -28,7 +28,7 @@ func New(connString string) (*Instance, error) {
 	return ii, nil
 }
 
-func (i *Instance) UpdateDenoms(chain models.Chain) error {
+func (i *Instance) UpdateDenoms(chain cnsmodels.Chain) error {
 	n, err := i.d.DB.PrepareNamed(`UPDATE cns.chains 
 	SET denoms=:denoms 
 	WHERE chain_name=:chain_name;`)
@@ -56,33 +56,33 @@ func (i *Instance) UpdateDenoms(chain models.Chain) error {
 	return nil
 }
 
-func (i *Instance) Chain(chain string) (models.Chain, error) {
-	var c models.Chain
+func (i *Instance) Chain(chain string) (cnsmodels.Chain, error) {
+	var c cnsmodels.Chain
 
 	err := i.d.DB.Get(&c, fmt.Sprintf("SELECT * FROM cns.chains WHERE chain_name='%s' limit 1;", chain))
 
 	return c, err
 }
 
-func (i *Instance) Chains() ([]models.Chain, error) {
-	var c []models.Chain
+func (i *Instance) Chains() ([]cnsmodels.Chain, error) {
+	var c []cnsmodels.Chain
 
 	return c, i.d.Exec("SELECT * FROM cns.chains", nil, &c)
 }
 
-func (i *Instance) GetCounterParty(chain, srcChannel string) ([]models.ChannelQuery, error) {
-	var c []models.ChannelQuery
+func (i *Instance) GetCounterParty(chain, srcChannel string) ([]cnsmodels.ChannelQuery, error) {
+	var c []cnsmodels.ChannelQuery
 
 	q, err := i.d.DB.PrepareNamed("select chain_name, json_data.* from cns.chains, jsonb_each_text(primary_channel) as json_data where chain_name=:chain_name and value=:channel limit 1;")
 	if err != nil {
-		return []models.ChannelQuery{}, err
+		return []cnsmodels.ChannelQuery{}, err
 	}
 
 	if err := q.Select(&c, map[string]interface{}{
 		"chain_name": chain,
 		"channel":    srcChannel,
 	}); err != nil {
-		return []models.ChannelQuery{}, err
+		return []cnsmodels.ChannelQuery{}, err
 	}
 
 	if len(c) == 0 {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/allinbits/demeris-backend/models"
+	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -25,8 +25,8 @@ func isIBCToken(denom string) bool {
 	return denom[:4] == "ibc/"
 }
 
-func formatDenom(w *Watcher, data coretypes.ResultEvent) (models.Denom, error) {
-	d := models.Denom{}
+func formatDenom(w *Watcher, data coretypes.ResultEvent) (cnsmodels.Denom, error) {
+	d := cnsmodels.Denom{}
 
 	poolCoinDenom, ok := data.Events["create_pool.pool_coin_denom"]
 
