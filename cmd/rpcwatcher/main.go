@@ -11,11 +11,11 @@ import (
 
 	"github.com/r3labs/diff"
 
-	"github.com/allinbits/demeris-backend/models"
-	"github.com/allinbits/demeris-backend/rpcwatcher"
-	"github.com/allinbits/demeris-backend/rpcwatcher/database"
-	"github.com/allinbits/demeris-backend/utils/logging"
-	"github.com/allinbits/demeris-backend/utils/store"
+	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
+	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher"
+	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
+	"github.com/allinbits/emeris-rpcwatcher/utils/logging"
+	"github.com/allinbits/emeris-rpcwatcher/utils/store"
 
 	_ "net/http/pprof"
 )
@@ -82,7 +82,7 @@ func main() {
 	if err != nil {
 		l.Panicw("unable to start redis client", "error", err)
 	}
-	var chains []models.Chain
+	var chains []cnsmodels.Chain
 
 	watchers := map[string]watcherInstance{}
 
@@ -194,8 +194,8 @@ func main() {
 	}
 }
 
-func mapChains(c []models.Chain) map[string]models.Chain {
-	ret := map[string]models.Chain{}
+func mapChains(c []cnsmodels.Chain) map[string]cnsmodels.Chain {
+	ret := map[string]cnsmodels.Chain{}
 	for _, cc := range c {
 		ret[cc.ChainName] = cc
 	}
