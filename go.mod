@@ -10,6 +10,7 @@ replace (
 )
 
 require (
+	github.com/alicebob/miniredis/v2 v2.16.0
 	github.com/allinbits/demeris-backend-models v0.0.0-20211111161516-d003d244b56e
 	github.com/allinbits/starport-operator v0.0.1-alpha.26
 	github.com/cockroachdb/cockroach-go/v2 v2.1.1
@@ -43,6 +44,7 @@ require (
 	github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Workiva/go-datastructures v1.0.52 // indirect
+	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/armon/go-metrics v0.3.8 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
@@ -149,6 +151,7 @@ require (
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tendermint/tm-db v0.6.4 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	github.com/zondax/hid v0.9.0 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
 	go.opentelemetry.io/otel v0.20.0 // indirect
