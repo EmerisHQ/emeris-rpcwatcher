@@ -329,6 +329,7 @@ func HandleMessage(w *Watcher, data coretypes.ResultEvent) {
 	// Handle case where a simple non-IBC transfer is being used.
 	if exists && !createPoolEventPresent && !IBCSenderEventPresent && !IBCReceivePacketEventPresent &&
 		!IBCAckEventPresent && !IBCTimeoutEventPresent && !SwapTransactionEventPresent && w.store.Exists(key) {
+		fmt.Printf("Inside exists")
 		if err := w.store.SetComplete(key, height); err != nil {
 			w.l.Errorw("cannot set complete", "chain name", chainName, "error", err)
 		}

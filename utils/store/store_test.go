@@ -25,7 +25,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	mr, store = SetupTestDB()
+	mr, store = SetupTestStore()
 	code := m.Run()
 	defer mr.Close()
 	os.Exit(code)
@@ -36,7 +36,7 @@ func getShadowKey(key string) string {
 }
 
 func TestCreateTicket(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// create ticket
 	require.NoError(t, store.CreateTicket(testChain, testTxHash, testOwner))
 	key := GetKey(testChain, testTxHash)
@@ -54,7 +54,7 @@ func TestCreateTicket(t *testing.T) {
 }
 
 func TestSetComplete(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// call SetComplete with not stored key, expecting error
 	key := GetKey(testChain, testTxHash)
 	require.Error(t, store.SetComplete(key, 123))
@@ -75,7 +75,7 @@ func TestSetComplete(t *testing.T) {
 }
 
 func TestSetInTransit(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// call SetInTransit with not stored key, expecting error
 	key := GetKey(testChain, testTxHash)
 	require.Error(t, store.SetInTransit(key, testDestChain, testSrcChannel,
@@ -99,7 +99,7 @@ func TestSetInTransit(t *testing.T) {
 }
 
 func TestSetIbcReceived(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// call SetIbcReceived with not stored key, expecting error
 	key := GetKey(testChain, testTxHash)
 	require.Error(t, store.SetIbcReceived(key, testTxHash, testChain, 123))
@@ -128,7 +128,7 @@ func TestSetIbcReceived(t *testing.T) {
 }
 
 func TestSetIbcFailed(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// call SetIbcFailed with not stored key, expecting error
 	key := GetKey(testChain, testTxHash)
 	require.Error(t, store.SetIbcFailed(key, testTxHash, testChain, 123))
@@ -152,7 +152,7 @@ func TestSetIbcFailed(t *testing.T) {
 }
 
 func TestSetIbcTimeoutUnlock(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// call SetIbcTimeoutUnlock with not stored key, expecting error
 	key := GetKey(testChain, testTxHash)
 	require.Error(t, store.SetIbcTimeoutUnlock(key, testTxHash, testChain, 123))
@@ -181,7 +181,7 @@ func TestSetIbcTimeoutUnlock(t *testing.T) {
 }
 
 func TestSetIbcAckUnlock(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// call SetIbcAckUnlock with not stored key, expecting error
 	key := GetKey(testChain, testTxHash)
 	require.Error(t, store.SetIbcAckUnlock(key, testTxHash, testChain, 123))
@@ -210,7 +210,7 @@ func TestSetIbcAckUnlock(t *testing.T) {
 }
 
 func TestSetFailedWithErr(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	// call SetFailedWithErr with not stored key, expecting error
 	key := GetKey(testChain, testTxHash)
 	require.Error(t, store.SetFailedWithErr(key, testErr, 123))
@@ -231,7 +231,7 @@ func TestSetFailedWithErr(t *testing.T) {
 }
 
 func TestSetPoolSwapFees(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	var (
 		testPoolID = "2"
 		testAmount = "1000"
@@ -249,7 +249,7 @@ func TestSetPoolSwapFees(t *testing.T) {
 }
 
 func TestBlocks(t *testing.T) {
-	defer ResetTestDB(mr, store)
+	defer ResetTestStore(mr, store)
 	blocks := NewBlocks(store)
 	// call Block method with height not stored, expected error
 	_, err := blocks.Block(123)

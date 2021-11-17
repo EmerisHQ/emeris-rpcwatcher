@@ -501,7 +501,7 @@ func GetIBCKey(chain, packetSrcChannel, packetSequence string) string {
 	return fmt.Sprintf("%s-%s-%s", chain, packetSrcChannel, packetSequence)
 }
 
-func SetupTestDB() (*miniredis.Miniredis, *Store) {
+func SetupTestStore() (*miniredis.Miniredis, *Store) {
 	m, err := miniredis.Run()
 	if err != nil {
 		log.Fatalf("got error: %s when running miniredis", err)
@@ -515,6 +515,6 @@ func SetupTestDB() (*miniredis.Miniredis, *Store) {
 	return m, s
 }
 
-func ResetTestDB(m *miniredis.Miniredis, s *Store) {
+func ResetTestStore(m *miniredis.Miniredis, s *Store) {
 	m.DB(s.Client.Options().DB).FlushDB()
 }
