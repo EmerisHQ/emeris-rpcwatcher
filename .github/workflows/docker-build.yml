@@ -45,3 +45,16 @@ jobs:
           tags: gcr.io/tendermint-dev/emeris-rpcwatcher:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-rpcwatcher:${{ github.sha }}
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
+
+  deploy-on-dev:
+    runs-on: self-hosted
+    needs: emeris-rpcwatcher
+
+    steps:
+      - name: Call repository_dispatch on demeris-backend
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
+          repository: allinbits/demeris-backend
+          event-type: dev-push-emeris-rpcwatcher
+          client-payload: '{"repo_name":"emeris-rpcwatcher","branch_name":"main","image_name":"emeris-rpcwatcher","image_sha":"${{ github.sha }}","service_name":"emeris-rpcwatcher"}'
