@@ -15,14 +15,15 @@ import (
 	"github.com/stretchr/testify/require"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
+	"go.uber.org/zap"
 )
 
 // global variables for tests
 var (
-	s               *store.Store
-	dbInstance      *database.Instance
-	mr              *miniredis.Miniredis
-	watcherInstance *Watcher
+	s          *store.Store
+	dbInstance *database.Instance
+	mr         *miniredis.Miniredis
+	logger     *zap.SugaredLogger
 )
 
 // TODO: use mocks for data in db
@@ -33,19 +34,13 @@ func TestMain(m *testing.M) {
 	defer ts.Stop()
 
 	// logger
-	l := logging.New(logging.LoggingConfig{
+	logger = logging.New(logging.LoggingConfig{
 		LogPath: "",
 		Debug:   true,
 	})
 
 	// setup test store
 	mr, s = store.SetupTestStore()
-	watcherInstance = &Watcher{
-		l:     l,
-		d:     dbInstance,
-		store: s,
-		Name:  "cosmos-hub",
-	}
 	code := m.Run()
 	defer mr.Close()
 	os.Exit(code)
@@ -78,17 +73,155 @@ func checkNoError(err error) {
 
 func TestHandleMessage(t *testing.T) {
 	defer store.ResetTestStore(mr, s)
-	var c coretypes.ResultEvent
-	err := json.Unmarshal([]byte(nonIBCTransferEvent), &c)
-	require.NoError(t, err)
-	var d types.EventDataTx
-	err = json.Unmarshal([]byte(resultCodeZero), &d)
-	c.Data = d
-	t.Log(c.Data)
-	require.NoError(t, err)
-	s.CreateTicket("cosmos-hub", "D88B758F52DD059958B55B5874105BDF421F0685BA7EB1ACBC7D04337D6466E0", "cosmos1vaa40n5naka7mav3za6kx40jckx6aa4nqvvx8a")
-	HandleMessage(watcherInstance, c)
-	ticket, err := s.Get(store.GetKey("cosmos-hub", "D88B758F52DD059958B55B5874105BDF421F0685BA7EB1ACBC7D04337D6466E0"))
-	require.NoError(t, err)
-	require.Equal(t, "complete", ticket.Status)
+
+	tests := []struct {
+		name       string
+		eventType  string
+		logger     *zap.SugaredLogger
+		resultData string
+		txHash     string
+		expStatus  string
+		validateFn func(*testing.T, *Watcher, coretypes.ResultEvent, string)
+	}{
+		{
+			"Handle message without logger",
+			nonIBCTransferEvent,
+			nil,
+			resultCodeZero,
+			nonIBCTransferTxHash,
+			"",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, _ string) {
+				require.Panics(t, func() { HandleMessage(w, data) })
+			},
+		},
+		{
+			"Handle non IBC transaction",
+			nonIBCTransferEvent,
+			logger,
+			resultCodeZero,
+			nonIBCTransferTxHash,
+			"complete",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, _ string) {
+				HandleMessage(w, data)
+			},
+		},
+		{
+			"Handle failed non IBC transaction",
+			nonIBCTransferEvent,
+			logger,
+			resultCodeNonZero,
+			nonIBCTransferTxHash,
+			"failed",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, _ string) {
+				HandleMessage(w, data)
+			},
+		},
+		{
+			"Handle create LP transaction",
+			createPoolEvent,
+			logger,
+			resultCodeZero,
+			createPoolTxHash,
+			"complete",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, _ string) {
+				HandleMessage(w, data)
+				// check pool denom is updated in db
+				c, err := w.d.Chain(w.Name)
+				require.NoError(t, err)
+				found := false
+				for _, dd := range c.Denoms {
+					if dd.Name == defaultPoolDenom {
+						found = true
+						break
+					}
+				}
+				require.True(t, found)
+			},
+		},
+		{
+			"Handle ibc transfer",
+			ibcTransferEvent,
+			logger,
+			resultCodeZero,
+			ibcTransferTxHash,
+			"transit",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, _ string) {
+				HandleMessage(w, data)
+			},
+		},
+		{
+			"Handle IBC receive packet transaction",
+			ibcReceivePacketEvent,
+			logger,
+			resultCodeZero,
+			ibcReceiveTxHash,
+			"IBC_receive_success",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, key string) {
+				require.NoError(t, s.SetInTransit(key, defaultChainName, defaultChannel, defaultReceivePktSeq,
+					ibcReceiveTxHash, defaultChainName, defaultHeight))
+				HandleMessage(w, data)
+			},
+		},
+		{
+			"Handle IBC acknowledge packet transaction",
+			ibcAckTxEvent,
+			logger,
+			resultCodeZero,
+			ibcAckTxHash,
+			"Tokens_unlocked_ack",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, key string) {
+				require.NoError(t, s.SetInTransit(key, defaultChainName, defaultChannel, defaultAckPktSeq,
+					ibcAckTxHash, defaultChainName, defaultHeight))
+				HandleMessage(w, data)
+			},
+		},
+		{
+			"Handle IBC timeout packet transaction",
+			ibcTimeoutEvent,
+			logger,
+			resultCodeZero,
+			ibcTimeoutTxHash,
+			"Tokens_unlocked_timeout",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, key string) {
+				require.NoError(t, s.SetInTransit(key, defaultChainName, defaultChannel, defaultTimeoutPktSeq,
+					ibcTimeoutTxHash, defaultChainName, defaultHeight))
+				HandleMessage(w, data)
+			},
+		},
+		{
+			"Handle swap transaction",
+			swapTransactionEvent,
+			logger,
+			resultCodeZero,
+			swapTxHash,
+			"complete",
+			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, _ string) {
+				HandleMessage(w, data)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			watcherInstance := &Watcher{
+				l:     tt.logger,
+				d:     dbInstance,
+				store: s,
+				Name:  defaultChainName,
+			}
+			var re coretypes.ResultEvent
+			require.NoError(t, json.Unmarshal([]byte(tt.eventType), &re))
+			var d types.EventDataTx
+			require.NoError(t, json.Unmarshal([]byte(tt.resultData), &d))
+			re.Data = d
+			require.NoError(t, s.CreateTicket(watcherInstance.Name, tt.txHash, testOwner))
+			key := store.GetKey(defaultChainName, tt.txHash)
+			tt.validateFn(t, watcherInstance, re, key)
+			if tt.expStatus != "" {
+				ticket, err := s.Get(key)
+				require.NoError(t, err)
+				require.Equal(t, tt.expStatus, ticket.Status)
+			}
+		})
+	}
 }
