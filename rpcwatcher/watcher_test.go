@@ -118,24 +118,14 @@ func TestHandleMessage(t *testing.T) {
 		},
 		{
 			"Handle create LP transaction",
-			createPoolEvent,
+			createPoolEvent(poolDenom1),
 			logger,
 			resultCodeZero,
 			createPoolTxHash,
 			"complete",
 			func(t *testing.T, w *Watcher, data coretypes.ResultEvent, _ string) {
 				HandleMessage(w, data)
-				// check pool denom is updated in db
-				c, err := w.d.Chain(w.Name)
-				require.NoError(t, err)
-				found := false
-				for _, dd := range c.Denoms {
-					if dd.Name == defaultPoolDenom {
-						found = true
-						break
-					}
-				}
-				require.True(t, found)
+				checkDenomExists(t, w, poolDenom1, true)
 			},
 		},
 		{
@@ -222,6 +212,288 @@ func TestHandleMessage(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.expStatus, ticket.Status)
 			}
+		})
+	}
+}
+
+func checkDenomExists(t *testing.T, w *Watcher, denom string, expected bool) {
+	// check pool denom is updated in db
+	c, err := w.d.Chain(w.Name)
+	require.NoError(t, err)
+	found := false
+	for _, dd := range c.Denoms {
+		if dd.Name == denom {
+			found = true
+			break
+		}
+	}
+	require.Equal(t, expected, found)
+}
+
+func TestHandleCosmosHubLPCreated(t *testing.T) {
+	defer store.ResetTestStore(mr, s)
+
+	watcherInstance := &Watcher{
+		l:     logger,
+		d:     dbInstance,
+		store: s,
+		Name:  defaultChainName,
+	}
+
+	var re coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(createPoolEvent(poolDenom2)), &re))
+	var d types.EventDataTx
+	require.NoError(t, json.Unmarshal([]byte(resultCodeZero), &d))
+	re.Data = d
+	require.NoError(t, s.CreateTicket(watcherInstance.Name, createPoolTxHash, testOwner))
+	key := store.GetKey(defaultChainName, createPoolTxHash)
+
+	tests := []struct {
+		name        string
+		chainName   string
+		data        coretypes.ResultEvent
+		denomStored bool
+	}{
+		{
+			"Handle Created LP - wrong chainName",
+			"test-chain",
+			re,
+			false,
+		},
+		{
+			"Handle Created LP - empty data",
+			defaultChainName,
+			coretypes.ResultEvent{},
+			false,
+		},
+		{
+			"Handle Created LP - incomplete data",
+			defaultChainName,
+			coretypes.ResultEvent{Events: map[string][]string{
+				"create_pool.pool_coin_denom": {poolDenom2},
+			}},
+			false,
+		},
+		{
+			"Handle Created LP - valid data",
+			defaultChainName,
+			re,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			HandleCosmosHubLPCreated(watcherInstance, tt.data, tt.chainName, key, defaultHeight)
+			checkDenomExists(t, watcherInstance, poolDenom2, tt.denomStored)
+		})
+	}
+}
+
+func TestHandleSwapTransaction(t *testing.T) {
+	watcherInstance := &Watcher{
+		l:     logger,
+		d:     dbInstance,
+		store: s,
+		Name:  defaultChainName,
+	}
+
+	var re coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(swapTransactionEvent), &re))
+	var d types.EventDataTx
+	require.NoError(t, json.Unmarshal([]byte(resultCodeZero), &d))
+	re.Data = d
+	defaultKey := store.GetKey(defaultChainName, swapTxHash)
+
+	tests := []struct {
+		name      string
+		data      coretypes.ResultEvent
+		key       string
+		expStatus string
+	}{
+		{
+			"Handle swap transaction - empty data",
+			coretypes.ResultEvent{},
+			defaultKey,
+			"pending",
+		},
+		{
+			"Handle swap transaction - incomplete data",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"swap_within_batch.pool_id": {"5"},
+			}},
+			defaultKey,
+			"pending",
+		},
+		{
+			"Handle swap transaction - incomplete data",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"swap_within_batch.pool_id": {"5"},
+			}},
+			defaultKey,
+			"pending",
+		},
+		{
+			"Handle swap transaction - wrong offer fee",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"swap_within_batch.pool_id":               {"5"},
+				"swap_within_batch.offer_coin_fee_amount": {"testamount"},
+				"swap_within_batch.offer_coin_denom":      {"testdenom"},
+			}},
+			defaultKey,
+			"complete",
+		},
+		{
+			"Handle swap transaction - wrong key",
+			re,
+			"testkey",
+			"",
+		},
+		{
+			"Handle swap transaction - valid data",
+			re,
+			defaultKey,
+			"complete",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer store.ResetTestStore(mr, s)
+			require.NoError(t, s.CreateTicket(watcherInstance.Name, swapTxHash, testOwner))
+			HandleSwapTransaction(watcherInstance, tt.data, watcherInstance.Name, tt.key, defaultHeight)
+			ticket, err := s.Get(tt.key)
+			if tt.expStatus != "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+			require.Equal(t, tt.expStatus, ticket.Status)
+		})
+	}
+}
+
+func TestHandleIBCSenderEvent(t *testing.T) {
+	watcherInstance := &Watcher{
+		l:     logger,
+		d:     dbInstance,
+		store: s,
+		Name:  defaultChainName,
+	}
+
+	var re coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(ibcTransferEvent), &re))
+	var d types.EventDataTx
+	require.NoError(t, json.Unmarshal([]byte(resultCodeZero), &d))
+	re.Data = d
+	defaultKey := store.GetKey(defaultChainName, ibcTransferTxHash)
+
+	tests := []struct {
+		name      string
+		data      coretypes.ResultEvent
+		expStatus string
+	}{
+		{
+			"Handle ibc send transaction - empty data",
+			coretypes.ResultEvent{},
+			"pending",
+		},
+		{
+			"Handle ibc send transaction - wrong source port",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"send_packet.packet_src_port": {"send"},
+			}},
+			"pending",
+		},
+		{
+			"Handle ibc send transaction - incomplete data",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"send_packet.packet_src_port": {"transfer"},
+			}},
+			"pending",
+		},
+		{
+			"Handle ibc send transaction - valid data",
+			re,
+			"transit",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer store.ResetTestStore(mr, s)
+			require.NoError(t, s.CreateTicket(watcherInstance.Name, ibcTransferTxHash, testOwner))
+			HandleIBCSenderEvent(watcherInstance, tt.data, watcherInstance.Name, ibcTransferTxHash, defaultKey, defaultHeight)
+			ticket, err := s.Get(defaultKey)
+			require.NoError(t, err)
+			require.Equal(t, tt.expStatus, ticket.Status)
+		})
+	}
+}
+
+func TestHandleIBCReceivePktEvent(t *testing.T) {
+	watcherInstance := &Watcher{
+		l:     logger,
+		d:     dbInstance,
+		store: s,
+		Name:  defaultChainName,
+	}
+
+	var re coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(ibcReceivePacketEvent), &re))
+	var d types.EventDataTx
+	require.NoError(t, json.Unmarshal([]byte(resultCodeZero), &d))
+	re.Data = d
+	failedEvent := re
+	failedEvent.Events["write_acknowledgement.packet_ack"] = []string{"{\"result\":\"AO==\"}"}
+	defaultKey := store.GetKey(defaultChainName, ibcReceiveTxHash)
+
+	tests := []struct {
+		name      string
+		data      coretypes.ResultEvent
+		expStatus string
+	}{
+		{
+			"Handle ibc receive packet - empty data",
+			coretypes.ResultEvent{},
+			"transit",
+		},
+		{
+			"Handle ibc receive packet - wrong source port",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"recv_packet.packet_src_port": {"send"},
+			}},
+			"transit",
+		},
+		{
+			"Handle ibc receive packet - incomplete data",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"recv_packet.packet_src_port": {"transfer"},
+			}},
+			"transit",
+		},
+		{
+			"Handle ibc receive packet successful transaction",
+			re,
+			"IBC_receive_success",
+		},
+		{
+			"Handle ibc receive packet failed transaction",
+			failedEvent,
+			"IBC_receive_failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer store.ResetTestStore(mr, s)
+			require.NoError(t, s.CreateTicket(watcherInstance.Name, ibcReceiveTxHash, testOwner))
+			require.NoError(t, s.SetInTransit(defaultKey, watcherInstance.Name, defaultChannel, defaultReceivePktSeq,
+				ibcReceiveTxHash, watcherInstance.Name, defaultHeight))
+			HandleIBCReceivePacket(watcherInstance, tt.data, watcherInstance.Name, ibcReceiveTxHash, defaultHeight)
+			ticket, err := s.Get(defaultKey)
+			require.NoError(t, err)
+			require.Equal(t, tt.expStatus, ticket.Status)
 		})
 	}
 }

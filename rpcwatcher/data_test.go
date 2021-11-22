@@ -10,7 +10,8 @@ const (
 
 	defaultChannel = "channel-0"
 
-	defaultPoolDenom = "pool96EF6EA6E5AC828ED87E8D07E7AE2A8180570ADD212117B2DA6F0B75D17A6295"
+	poolDenom1 = "pool96EF6EA6E5AC828ED87E8D07E7AE2A8180570ADD212117B2DA6F0B75D17A6294"
+	poolDenom2 = "pool96EF6EA6E5AC828ED87E8D07E7AE2A8180570ADD212117B2DA6F0B75D17A6295"
 
 	defaultHeight = 123
 
@@ -74,23 +75,6 @@ var (
 				]', 
 				ARRAY['feeaddress'], 'genesis_hash', 
 				'{"endpoint":"endpoint","chain_id":"chainid","bech32_config":{"main_prefix":"main_prefix","prefix_account":"prefix_account","prefix_validator":"prefix_validator",
-				"prefix_consensus":"prefix_consensus","prefix_public":"prefix_public","prefix_operator":"prefix_operator"}}', 
-				'm/44''/118''/0''/0/0')
-		`,
-		`
-		INSERT INTO cns.chains 
-			(
-			id, enabled, chain_name, valid_block_thresh, logo, display_name, primary_channel, denoms, demeris_addresses, 
-			genesis_hash, node_info, derivation_path
-			) 
-			VALUES (
-				2, true, 'akash', '10s', 'logo url', 'Akash Network', 
-				'{"akash": "channel-0", "cosmos-hub": "channel-1"}',
-				'[
-					{"display_name":"AKT","name":"uakt","verified":true,"fetch_price":true,"fee_token":true,"fee_levels":{"low":1,"average":22,"high":42},"precision":6}
-				]', 
-				ARRAY['feeaddress2'], 'genesis_hash_2', 
-				'{"endpoint":"endpoint2","chain_id":"chainid2","bech32_config":{"main_prefix":"main_prefix","prefix_account":"prefix_account","prefix_validator":"prefix_validator",
 				"prefix_consensus":"prefix_consensus","prefix_public":"prefix_public","prefix_operator":"prefix_operator"}}', 
 				'm/44''/118''/0''/0/0')
 		`,
@@ -235,36 +219,6 @@ var (
 		"tx.height":["6475075"]
 	}}`
 
-	createPoolEvent = defaultEventData + `{
-		"create_pool.deposit_coins": ["1000000000uatom,50000000000uusd"],
-		"tx.height": ["52"],
-		"message.action": ["create_pool"],
-		"transfer.sender": ["cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss"],
-		"create_pool.pool_name": ["uatom/uusd/1"],
-		"create_pool.reserve_account": ["cosmos1jmhkafh94jpgakr735r70t32sxq9wzkayzs9we"],
-		"message.sender": [
-			"cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss",
-			"cosmos1tx68a8k9yz54z06qfve9l2zxvgsz4ka3hr8962",
-			"cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss"
-		],
-		"create_pool.pool_id": ["1"],
-		"create_pool.pool_type_id": ["1"],
-		"create_pool.pool_coin_denom": ["pool96EF6EA6E5AC828ED87E8D07E7AE2A8180570ADD212117B2DA6F0B75D17A6295"],
-		"transfer.recipient": [
-			"cosmos1jmhkafh94jpgakr735r70t32sxq9wzkayzs9we",
-			"cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss",
-			"cosmos1jv65s3grqf6v6jl3dp4t6c9t9rk99cd88lyufl"
-		],
-		"transfer.amount": [
-			"1000000000uatom,50000000000uusd",
-			"1000000pool96EF6EA6E5AC828ED87E8D07E7AE2A8180570ADD212117B2DA6F0B75D17A6295",
-			"100000000stake"
-		],
-		"tm.event": ["Tx"],
-		"message.module": ["liquidity"],
-		"tx.hash": ["` + createPoolTxHash + `"]
-	}}`
-
 	swapTransactionEvent = defaultEventData + `{
 		"message.action":["swap_within_batch"],
 		"message.module":["liquidity"],
@@ -286,3 +240,35 @@ var (
 		"tx.height":["8407895"]
 	}}`
 )
+
+func createPoolEvent(poolDenom string) string {
+	return defaultEventData + `{
+		"create_pool.deposit_coins": ["1000000000uatom,50000000000uusd"],
+		"tx.height": ["52"],
+		"message.action": ["create_pool"],
+		"transfer.sender": ["cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss"],
+		"create_pool.pool_name": ["uatom/uusd/1"],
+		"create_pool.reserve_account": ["cosmos1jmhkafh94jpgakr735r70t32sxq9wzkayzs9we"],
+		"message.sender": [
+			"cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss",
+			"cosmos1tx68a8k9yz54z06qfve9l2zxvgsz4ka3hr8962",
+			"cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss"
+		],
+		"create_pool.pool_id": ["1"],
+		"create_pool.pool_type_id": ["1"],
+		"create_pool.pool_coin_denom": ["` + poolDenom + `"],
+		"transfer.recipient": [
+			"cosmos1jmhkafh94jpgakr735r70t32sxq9wzkayzs9we",
+			"cosmos1gerupkxgr4xq9a58pjrps0dzdelenkjyewu4ss",
+			"cosmos1jv65s3grqf6v6jl3dp4t6c9t9rk99cd88lyufl"
+		],
+		"transfer.amount": [
+			"1000000000uatom,50000000000uusd",
+			"1000000` + poolDenom + `",
+			"100000000stake"
+		],
+		"tm.event": ["Tx"],
+		"message.module": ["liquidity"],
+		"tx.hash": ["` + createPoolTxHash + `"]
+	}}`
+}
