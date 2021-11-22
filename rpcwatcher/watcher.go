@@ -236,7 +236,7 @@ func resubscribe(w *Watcher) {
 		}
 
 		time.Sleep(500 * time.Millisecond)
-		count = count + 1
+		count++
 		w.l.Debugw("this is count", "count", count)
 
 		ww, err := NewWatcher(w.endpoint, w.Name, w.l, w.apiUrl, w.d, w.store, w.subs, w.eventTypeMappings)
@@ -657,7 +657,7 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		w.l.Errorw("cannot create gRPC client", "error", err, "address", fmt.Sprintf("%s:%d", w.Name, grpcPort))
+		w.l.Errorw("cannot create gRPC client", "error", err, "address", "chain name", w.Name, fmt.Sprintf("%s:%d", w.Name, grpcPort))
 	}
 
 	liquidityQuery := liquiditytypes.NewQueryClient(grpcConn)

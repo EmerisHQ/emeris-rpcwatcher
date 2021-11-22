@@ -11,15 +11,6 @@ import (
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-// FIXME: Lint failure (2021/12/02), commented out as unused.
-// If still commented out months in the future, just remove
-//func isPoolCoin(denom string) bool {
-//	if len(denom) < 4 {
-//		return false
-//	}
-//	return denom[:4] == "pool"
-//}
-
 func isIBCToken(denom string) bool {
 	if len(denom) < 4 {
 		return false
@@ -50,7 +41,7 @@ func formatDenom(w *Watcher, data coretypes.ResultEvent) (cnsmodels.Denom, error
 
 	coins, err := sdktypes.ParseCoinsNormalized(depositCoins[0])
 	if err != nil {
-		return d, err
+		return d, fmt.Errorf("unable to parse deposit coins")
 	}
 
 	cosmoshub, err := w.d.Chain("cosmos-hub")
@@ -69,19 +60,18 @@ func formatDenom(w *Watcher, data coretypes.ResultEvent) (cnsmodels.Denom, error
 			if err != nil {
 				return d, err
 			}
-			u.Path = fmt.Sprintf("chain/%s/denom/verify_trace/%s", "cosmos-hub", coin.Denom[4:])
 
+			u.Path = fmt.Sprintf("chain/%s/denom/verify_trace/%s", "cosmos-hub", coin.Denom[4:])
 			endpoint := u.String()
 
-			resp, err := http.Get(endpoint)
-
+			resp, err := http.Get(endpoint) //nolint url variable defined locally
 			if err != nil {
 				return d, err
 			}
 
 			if resp.StatusCode != 200 {
 				// retry if query fails
-				resp, err = http.Get(endpoint)
+				resp, err = http.Get(endpoint) //nolint url variable defined locally
 
 				if err != nil {
 					return d, err
