@@ -89,7 +89,7 @@ func NewWatcher(
 	subscriptions []string,
 	eventTypeMappings map[string][]DataHandler,
 ) (*Watcher, error) {
-	if eventTypeMappings == nil || len(eventTypeMappings) == 0 {
+	if len(eventTypeMappings) == 0 {
 		return nil, fmt.Errorf("event type mappings cannot be empty")
 	}
 
@@ -236,7 +236,7 @@ func resubscribe(w *Watcher) {
 		}
 
 		time.Sleep(500 * time.Millisecond)
-		count = count + 1
+		count++
 		w.l.Debugw("this is count", "count", count)
 
 		ww, err := NewWatcher(w.endpoint, w.Name, w.l, w.apiUrl, w.d, w.store, w.subs, w.eventTypeMappings)
@@ -656,6 +656,9 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 		fmt.Sprintf("%s:%d", w.Name, grpcPort),
 		grpc.WithInsecure(),
 	)
+	if err != nil {
+		w.l.Errorw("cannot create grpc connection", "error", err, "chain name", w.Name)
+	}
 
 	liquidityQuery := liquiditytypes.NewQueryClient(grpcConn)
 	poolsRes, err := liquidityQuery.LiquidityPools(context.Background(), &liquiditytypes.QueryLiquidityPoolsRequest{})
@@ -707,7 +710,6 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 		w.l.Errorw("cannot set total supply", "error", err, "height", newHeight)
 	}
 
-	return
 }
 
 func HandleNewBlock(w *Watcher, _ coretypes.ResultEvent) {
