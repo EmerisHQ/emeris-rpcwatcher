@@ -10,7 +10,7 @@ replace (
 )
 
 require (
-	github.com/alicebob/miniredis/v2 v2.16.0
+	github.com/alicebob/miniredis/v2 v2.16.1
 	github.com/allinbits/demeris-backend-models v0.0.0-20211111161516-d003d244b56e
 	github.com/allinbits/starport-operator v0.0.1-alpha.26
 	github.com/cockroachdb/cockroach-go/v2 v2.1.1
