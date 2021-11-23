@@ -141,7 +141,7 @@ func TestHandleMessage(t *testing.T) {
 		},
 		{
 			"Handle IBC receive packet transaction",
-			ibcReceivePacketEvent,
+			ibcReceivePacketEvent(successAck),
 			logger,
 			resultCodeZero,
 			ibcReceiveTxHash,
@@ -439,13 +439,15 @@ func TestHandleIBCReceivePktEvent(t *testing.T) {
 		Name:  defaultChainName,
 	}
 
-	var re coretypes.ResultEvent
-	require.NoError(t, json.Unmarshal([]byte(ibcReceivePacketEvent), &re))
+	// creating two receive tx events with different packet acknowledgements
+	var eventWithSuccessAck coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(ibcReceivePacketEvent(successAck)), &eventWithSuccessAck))
+	var eventWithFailedAck coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(ibcReceivePacketEvent(failedAck)), &eventWithFailedAck))
 	var d types.EventDataTx
 	require.NoError(t, json.Unmarshal([]byte(resultCodeZero), &d))
-	re.Data = d
-	failedEvent := re
-	failedEvent.Events["write_acknowledgement.packet_ack"] = []string{"{\"result\":\"AO==\"}"}
+	eventWithSuccessAck.Data = d
+	eventWithFailedAck.Data = d
 	defaultKey := store.GetKey(defaultChainName, ibcReceiveTxHash)
 
 	tests := []struct {
@@ -474,12 +476,12 @@ func TestHandleIBCReceivePktEvent(t *testing.T) {
 		},
 		{
 			"Handle ibc receive packet successful transaction",
-			re,
+			eventWithSuccessAck,
 			"IBC_receive_success",
 		},
 		{
 			"Handle ibc receive packet failed transaction",
-			failedEvent,
+			eventWithFailedAck,
 			"IBC_receive_failed",
 		},
 	}
@@ -491,6 +493,123 @@ func TestHandleIBCReceivePktEvent(t *testing.T) {
 			require.NoError(t, s.SetInTransit(defaultKey, watcherInstance.Name, defaultChannel, defaultReceivePktSeq,
 				ibcReceiveTxHash, watcherInstance.Name, defaultHeight))
 			HandleIBCReceivePacket(watcherInstance, tt.data, watcherInstance.Name, ibcReceiveTxHash, defaultHeight)
+			ticket, err := s.Get(defaultKey)
+			require.NoError(t, err)
+			require.Equal(t, tt.expStatus, ticket.Status)
+		})
+	}
+}
+
+func TestHandleIBCAckPktEvent(t *testing.T) {
+	watcherInstance := &Watcher{
+		l:     logger,
+		d:     dbInstance,
+		store: s,
+		Name:  defaultChainName,
+	}
+
+	// creating two receive tx events with different packet acknowledgements
+	var eventWithPktError coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(ibcAckTxEvent), &eventWithPktError))
+	var eventWithoutPktError coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(ibcAckTxEvent), &eventWithoutPktError))
+	var d types.EventDataTx
+	require.NoError(t, json.Unmarshal([]byte(resultCodeZero), &d))
+	eventWithPktError.Data = d
+	eventWithoutPktError.Data = d
+	delete(eventWithoutPktError.Events, "fungible_token_packet.error")
+	defaultKey := store.GetKey(defaultChainName, ibcAckTxHash)
+
+	tests := []struct {
+		name      string
+		data      coretypes.ResultEvent
+		expStatus string
+	}{
+		{
+			"Handle ibc ack packet - empty data",
+			coretypes.ResultEvent{},
+			"transit",
+		},
+		{
+			"Handle ibc ack packet - incomplete data",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"acknowledge_packet.packet_src_channel": {"channel-0"},
+			}},
+			"transit",
+		},
+		{
+			"Handle ibc ack packet without token packet error",
+			eventWithoutPktError,
+			"transit",
+		},
+		{
+			"Handle ibc ack packet with token packet error",
+			eventWithPktError,
+			"Tokens_unlocked_ack",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer store.ResetTestStore(mr, s)
+			require.NoError(t, s.CreateTicket(watcherInstance.Name, ibcAckTxHash, testOwner))
+			require.NoError(t, s.SetInTransit(defaultKey, watcherInstance.Name, defaultChannel, defaultAckPktSeq,
+				ibcAckTxHash, watcherInstance.Name, defaultHeight))
+			HandleIBCAckPacket(watcherInstance, tt.data, watcherInstance.Name, ibcAckTxHash, defaultHeight)
+			ticket, err := s.Get(defaultKey)
+			require.NoError(t, err)
+			require.Equal(t, tt.expStatus, ticket.Status)
+		})
+	}
+}
+
+func TestHandleIBCTimeoutPktEvent(t *testing.T) {
+	watcherInstance := &Watcher{
+		l:     logger,
+		d:     dbInstance,
+		store: s,
+		Name:  defaultChainName,
+	}
+
+	// creating two receive tx events with different packet acknowledgements
+	var re coretypes.ResultEvent
+	require.NoError(t, json.Unmarshal([]byte(ibcTimeoutEvent), &re))
+	var d types.EventDataTx
+	require.NoError(t, json.Unmarshal([]byte(resultCodeZero), &d))
+	re.Data = d
+	defaultKey := store.GetKey(defaultChainName, ibcTimeoutTxHash)
+
+	tests := []struct {
+		name      string
+		data      coretypes.ResultEvent
+		expStatus string
+	}{
+		{
+			"Handle ibc timeout packet - empty data",
+			coretypes.ResultEvent{},
+			"transit",
+		},
+		{
+			"Handle ibc timeout packet - incomplete data",
+			coretypes.ResultEvent{Events: map[string][]string{
+				"timeout_packet.packet_src_channel": {"channel-0"},
+			}},
+			"transit",
+		},
+		{
+			"Handle succesful ibc timeout packet transaction",
+			re,
+			"Tokens_unlocked_timeout",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer store.ResetTestStore(mr, s)
+			require.NoError(t, s.CreateTicket(watcherInstance.Name, ibcTimeoutTxHash, testOwner))
+			require.NoError(t, s.SetInTransit(defaultKey, watcherInstance.Name, defaultChannel, defaultTimeoutPktSeq,
+				ibcTimeoutTxHash, watcherInstance.Name, defaultHeight))
+			HandleIBCTimeoutPacket(watcherInstance, tt.data, watcherInstance.Name, ibcTimeoutTxHash, defaultHeight)
 			ticket, err := s.Get(defaultKey)
 			require.NoError(t, err)
 			require.Equal(t, tt.expStatus, ticket.Status)

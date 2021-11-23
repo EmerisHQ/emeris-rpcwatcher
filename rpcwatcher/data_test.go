@@ -21,6 +21,10 @@ const (
 
 	defaultTimeoutPktSeq = "3"
 
+	successAck = `{\"result\":\"AQ==\"}`
+
+	failedAck = `{\"result\":\"AO==\"}`
+
 	testOwner = "cosmos1vaa40n5naka7mav3za6kx40jckx6aa4nqvvx8a"
 
 	nonIBCTransferTxHash = "D88B758F52DD059958B55B5874105BDF421F0685BA7EB1ACBC7D04337D6466E0"
@@ -148,53 +152,6 @@ var (
 			"tx.height": ["76383"]
 	}}`
 
-	ibcReceivePacketEvent = defaultEventData + `{
-		"update_client.consensus_height": ["0-76377"],
-		"transfer.sender": ["cosmos1yl6hdjhmkf37639730gffanpzndzdpmhwlkfhr"],
-		"message.sender": ["cosmos1yl6hdjhmkf37639730gffanpzndzdpmhwlkfhr"],
-		"fungible_token_packet.module": ["transfer"],
-		"write_acknowledgement.packet_sequence": ["1"],
-		"write_acknowledgement.packet_src_channel": ["channel-0"],
-		"write_acknowledgement.packet_dst_channel": ["channel-0"],
-		"message.action": ["update_client", "recv_packet"],
-		"tx.height": ["369"],
-		"fungible_token_packet.success": ["false"],
-		"fungible_token_packet.denom": ["token"],
-		"fungible_token_packet.amount": ["100"],
-		"transfer.amount": ["100ibc/B5CB286F69D48B2C4F6F8D8CF59011C40590DCF8A91617A5FBA9FF0A7B21307F"],
-		"recv_packet.packet_connection": ["connection-0"],
-		"denomination_trace.trace_hash": ["B5CB286F69D48B2C4F6F8D8CF59011C40590DCF8A91617A5FBA9FF0A7B21307F"],
-		"recv_packet.packet_sequence": ["1"],
-		"update_client.header": ["0a262f6962632e6c69676874636c69656e74732e74656e6465726d696e742e76312e48656164657212cf060ac8040a8b030a02080b12047465737418d9d404220b0899ef97850610b0c798182a480a20e24f9e2e1265f77850fee30533f6e8ac8116aa198ccfb7f0fee21d6f8ef844141224080112205595952bf1f9818fbc8da8cfa9930449e9ffd10427a9bf371848feca002ed50d3220dabf945f2783c214e1e397b3775c998aab67ef896c64c70a70a199818db2f79b3a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855422091519719cbcb07b33a0b468253973465fc61eac1e4948d2d8bf095fdae13bc284a2091519719cbcb07b33a0b468253973465fc61eac1e4948d2d8bf095fdae13bc285220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a20b7dccb2fd77123f5c92a7b6a6d14b948d6b3d32e1e44236b12f45b31a03f18c26220049542f20abb2c8b10f03fc75a3a8a312f2040b6a5c862863cc4ea4858184ee56a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855721427cefff1e12f5f040e57cb4fe4bc4bf8988690d712b70108d9d4041a480a20404267258fa8e0621629a4d7970a7515835be089e99d4624a63e2c6d50e3e8191224080112204e68da645253d99e2b50a11b89bc8a87543dcac02c618ef6730e5bdb9cfd7a5622670802121427cefff1e12f5f040e57cb4fe4bc4bf8988690d71a0b089aef97850610c8eda8532240e24f7e6c520c4fc229bc5b241345a02ab2aeefd6e09719c4530c58438e22a7e965c814f361366bf5a0b9cc992bdb53688f885999c578bd2fe2ee76b532fbf305127e0a3c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e1864123c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e186418641a0410fdd304227c0a3c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e1864123c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e1864"],
-		"recv_packet.packet_data": [
-        	"{\"amount\":\"100\",\"denom\":\"token\",\"receiver\":\"cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2\",\"sender\":\"cosmos16ma9usaqqgz0mtfkfhpnf767cqkz5p7htlt8xy\"}"
-      	],
-		"recv_packet.packet_channel_ordering": ["ORDER_UNORDERED"],
-		"write_acknowledgement.packet_data": [
-        	"{\"amount\":\"100\",\"denom\":\"token\",\"receiver\":\"cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2\",\"sender\":\"cosmos16ma9usaqqgz0mtfkfhpnf767cqkz5p7htlt8xy\"}"
-      	],
-		"write_acknowledgement.packet_timeout_height": ["0-1267"],
-		"update_client.client_type": ["07-tendermint"],
-		"recv_packet.packet_src_port": ["transfer"],
-		"recv_packet.packet_dst_channel": ["channel-0"],
-		"denomination_trace.denom": ["ibc/B5CB286F69D48B2C4F6F8D8CF59011C40590DCF8A91617A5FBA9FF0A7B21307F"],
-		"fungible_token_packet.receiver": ["cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2"],
-		"write_acknowledgement.packet_timeout_timestamp": ["1621490047681380000"],
-		"write_acknowledgement.packet_dst_port": ["transfer"],
-		"write_acknowledgement.packet_connection": ["connection-0"],
-		"update_client.client_id": ["07-tendermint-0"],
-		"recv_packet.packet_timeout_height": ["0-1267"],
-		"recv_packet.packet_src_channel": ["channel-0"],
-		"recv_packet.packet_dst_port": ["transfer"],
-		"transfer.recipient": ["cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2"],
-		"tx.hash": ["` + ibcReceiveTxHash + `"],
-		"message.module": ["ibc_client", "ibc_channel"],
-		"write_acknowledgement.packet_src_port": ["transfer"],
-		"write_acknowledgement.packet_ack": ["{\"result\":\"AQ==\"}"],
-		"tm.event": ["Tx"],
-		"recv_packet.packet_timeout_timestamp": ["1621490047681380000"]
-	}}`
-
 	ibcTimeoutEvent = defaultEventData + `{
 		"message.action":["timeout_packet"],
 		"message.module":["ibc_channel"],
@@ -240,6 +197,55 @@ var (
 		"tx.height":["8407895"]
 	}}`
 )
+
+func ibcReceivePacketEvent(ack string) string {
+	return defaultEventData + `{
+		"update_client.consensus_height": ["0-76377"],
+		"transfer.sender": ["cosmos1yl6hdjhmkf37639730gffanpzndzdpmhwlkfhr"],
+		"message.sender": ["cosmos1yl6hdjhmkf37639730gffanpzndzdpmhwlkfhr"],
+		"fungible_token_packet.module": ["transfer"],
+		"write_acknowledgement.packet_sequence": ["1"],
+		"write_acknowledgement.packet_src_channel": ["channel-0"],
+		"write_acknowledgement.packet_dst_channel": ["channel-0"],
+		"message.action": ["update_client", "recv_packet"],
+		"tx.height": ["369"],
+		"fungible_token_packet.success": ["false"],
+		"fungible_token_packet.denom": ["token"],
+		"fungible_token_packet.amount": ["100"],
+		"transfer.amount": ["100ibc/B5CB286F69D48B2C4F6F8D8CF59011C40590DCF8A91617A5FBA9FF0A7B21307F"],
+		"recv_packet.packet_connection": ["connection-0"],
+		"denomination_trace.trace_hash": ["B5CB286F69D48B2C4F6F8D8CF59011C40590DCF8A91617A5FBA9FF0A7B21307F"],
+		"recv_packet.packet_sequence": ["1"],
+		"update_client.header": ["0a262f6962632e6c69676874636c69656e74732e74656e6465726d696e742e76312e48656164657212cf060ac8040a8b030a02080b12047465737418d9d404220b0899ef97850610b0c798182a480a20e24f9e2e1265f77850fee30533f6e8ac8116aa198ccfb7f0fee21d6f8ef844141224080112205595952bf1f9818fbc8da8cfa9930449e9ffd10427a9bf371848feca002ed50d3220dabf945f2783c214e1e397b3775c998aab67ef896c64c70a70a199818db2f79b3a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855422091519719cbcb07b33a0b468253973465fc61eac1e4948d2d8bf095fdae13bc284a2091519719cbcb07b33a0b468253973465fc61eac1e4948d2d8bf095fdae13bc285220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a20b7dccb2fd77123f5c92a7b6a6d14b948d6b3d32e1e44236b12f45b31a03f18c26220049542f20abb2c8b10f03fc75a3a8a312f2040b6a5c862863cc4ea4858184ee56a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855721427cefff1e12f5f040e57cb4fe4bc4bf8988690d712b70108d9d4041a480a20404267258fa8e0621629a4d7970a7515835be089e99d4624a63e2c6d50e3e8191224080112204e68da645253d99e2b50a11b89bc8a87543dcac02c618ef6730e5bdb9cfd7a5622670802121427cefff1e12f5f040e57cb4fe4bc4bf8988690d71a0b089aef97850610c8eda8532240e24f7e6c520c4fc229bc5b241345a02ab2aeefd6e09719c4530c58438e22a7e965c814f361366bf5a0b9cc992bdb53688f885999c578bd2fe2ee76b532fbf305127e0a3c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e1864123c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e186418641a0410fdd304227c0a3c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e1864123c0a1427cefff1e12f5f040e57cb4fe4bc4bf8988690d712220a20df7e38431ba7663a642d575648f1aa46ed7eb029bfe0499c29a848c81c10926e1864"],
+		"recv_packet.packet_data": [
+        	"{\"amount\":\"100\",\"denom\":\"token\",\"receiver\":\"cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2\",\"sender\":\"cosmos16ma9usaqqgz0mtfkfhpnf767cqkz5p7htlt8xy\"}"
+      	],
+		"recv_packet.packet_channel_ordering": ["ORDER_UNORDERED"],
+		"write_acknowledgement.packet_data": [
+        	"{\"amount\":\"100\",\"denom\":\"token\",\"receiver\":\"cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2\",\"sender\":\"cosmos16ma9usaqqgz0mtfkfhpnf767cqkz5p7htlt8xy\"}"
+      	],
+		"write_acknowledgement.packet_timeout_height": ["0-1267"],
+		"update_client.client_type": ["07-tendermint"],
+		"recv_packet.packet_src_port": ["transfer"],
+		"recv_packet.packet_dst_channel": ["channel-0"],
+		"denomination_trace.denom": ["ibc/B5CB286F69D48B2C4F6F8D8CF59011C40590DCF8A91617A5FBA9FF0A7B21307F"],
+		"fungible_token_packet.receiver": ["cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2"],
+		"write_acknowledgement.packet_timeout_timestamp": ["1621490047681380000"],
+		"write_acknowledgement.packet_dst_port": ["transfer"],
+		"write_acknowledgement.packet_connection": ["connection-0"],
+		"update_client.client_id": ["07-tendermint-0"],
+		"recv_packet.packet_timeout_height": ["0-1267"],
+		"recv_packet.packet_src_channel": ["channel-0"],
+		"recv_packet.packet_dst_port": ["transfer"],
+		"transfer.recipient": ["cosmos1v4a9gud6ycj7pd2fl7g563y3rxgyn6yjg0w7g2"],
+		"tx.hash": ["` + ibcReceiveTxHash + `"],
+		"message.module": ["ibc_client", "ibc_channel"],
+		"write_acknowledgement.packet_src_port": ["transfer"],
+		"write_acknowledgement.packet_ack": ["` + ack + `"],
+		"tm.event": ["Tx"],
+		"recv_packet.packet_timeout_timestamp": ["1621490047681380000"]
+	}}`
+}
 
 func createPoolEvent(poolDenom string) string {
 	return defaultEventData + `{
