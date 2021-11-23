@@ -28,10 +28,15 @@ const ackSuccess = "AQ==" // Packet ack value is true when ibc is success and co
 const nonZeroCodeErrFmt = "non-zero code on chain %s: %s"
 
 const (
-	EventsTx       = "tm.event='Tx'"
-	EventsBlock    = "tm.event='NewBlock'"
-	defaultRPCPort = 26657
-	grpcPort       = 9090
+	EventsTx                = "tm.event='Tx'"
+	EventsBlock             = "tm.event='NewBlock'"
+	defaultRPCPort          = 26657
+	grpcPort                = 9090
+	defaultWSClientReadWait = 30 * time.Second
+	defaultWatchdogTimeout  = 20 * time.Second
+	defaultReconnectionTime = 15 * time.Second
+	defaultResubscribeSleep = 500 * time.Millisecond
+	defaultTimeGap          = 750 * time.Millisecond
 )
 
 type DataHandler func(watcher *Watcher, event coretypes.ResultEvent)
@@ -103,7 +108,7 @@ func NewWatcher(
 	ws, err := client.NewWS(
 		endpoint,
 		"/websocket",
-		client.ReadWait(30*time.Second),
+		client.ReadWait(defaultWSClientReadWait),
 	)
 
 	if err != nil {
@@ -119,7 +124,7 @@ func NewWatcher(
 		return nil, err
 	}
 
-	wd := newWatchdog(20 * time.Second)
+	wd := newWatchdog(defaultWatchdogTimeout)
 
 	w := &Watcher{
 		apiUrl:            apiUrl,
@@ -196,7 +201,7 @@ func (w *Watcher) readChannel() {
 				go func() {
 					w.DataChannel <- e
 				}()
-			case <-time.After(15 * time.Second):
+			case <-time.After(defaultReconnectionTime):
 				w.ErrorChannel <- fmt.Errorf("tendermint websocket hang, triggering reconnection")
 				return
 			}
@@ -235,7 +240,7 @@ func resubscribe(w *Watcher) {
 			w.l.Errorw("unable to set chain name with status resubscribing", "error", err)
 		}
 
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(defaultResubscribeSleep)
 		count = count + 1
 		w.l.Debugw("this is count", "count", count)
 
@@ -377,7 +382,7 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 		panic("rpc returned data which is not of expected type")
 	}
 
-	time.Sleep(750 * time.Millisecond) // to handle the time gap between block production and event broadcast
+	time.Sleep(defaultTimeGap) // to handle the time gap between block production and event broadcast
 	newHeight := realData.Block.Header.Height
 
 	u := w.endpoint
