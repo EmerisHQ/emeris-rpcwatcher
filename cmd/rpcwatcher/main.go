@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/r3labs/diff"
+	"go.uber.org/zap"
 
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher"
@@ -64,8 +65,8 @@ func main() {
 
 	if c.Debug {
 		go func() {
-			l.Debugw("starting profiling server", "port", "6060")
-			err := http.ListenAndServe(":6060", nil)
+			l.Debugw("starting profiling server", "address", c.ProfilingServerURL)
+			err := http.ListenAndServe(c.ProfilingServerURL, nil)
 			if err != nil {
 				l.Panicw("cannot run profiling server", "error", err)
 			}
@@ -95,28 +96,11 @@ func main() {
 	chainsMap := mapChains(chains)
 
 	for cn := range chainsMap {
-		eventMappings := standardMappings
-
-		if cn == "cosmos-hub" { // special case, needs to observe new blocks too
-			eventMappings = cosmosHubMappings
-		}
-
-		watcher, err := rpcwatcher.NewWatcher(endpoint(cn), cn, l, c.ApiURL, db, s, eventsToSubTo, eventMappings)
-
-		if err != nil {
-			l.Errorw("cannot create chain", "error", err)
-			delete(chainsMap, cn)
+		updatedChainsMap, watcher, cancel, shouldContinue := startNewWatcher(cn, chainsMap, c, db, s, l, false)
+		chainsMap = updatedChainsMap
+		if shouldContinue {
 			continue
 		}
-
-		err = s.SetWithExpiry(cn, "true", 0)
-		if err != nil {
-			l.Errorw("unable to set chain name as true", "error", err)
-		}
-
-		l.Debugw("connected", "chainName", cn)
-		ctx, cancel := context.WithCancel(context.Background())
-		rpcwatcher.Start(watcher, ctx)
 
 		watchers[cn] = watcherInstance{
 			watcher: watcher,
@@ -127,6 +111,9 @@ func main() {
 	for range time.Tick(1 * time.Second) {
 
 		ch, err := db.Chains()
+		if err != nil {
+			l.Errorw("cannot get chains from db", "error", err)
+		}
 
 		newChainsMap := mapChains(ch)
 
@@ -157,32 +144,11 @@ func main() {
 			case diff.CREATE:
 				name := d.Path[0]
 
-				eventMappings := standardMappings
-
-				if name == "cosmos-hub" { // special case, needs to observe new blocks too
-					eventMappings = cosmosHubMappings
-				}
-
-				watcher, err := rpcwatcher.NewWatcher(endpoint(name), name, l, c.ApiURL, db, s, eventsToSubTo, eventMappings)
-
-				if err != nil {
-					var dnsErr *net.DNSError
-					if errors.As(err, &dnsErr) || strings.Contains(err.Error(), "connection refused") {
-						l.Infow("chain not yet available", "name", name)
-						continue
-					}
-
-					l.Errorw("cannot create chain", "error", err)
+				_, watcher, cancel, shouldContinue := startNewWatcher(name, chainsMap, c, db, s, l, true)
+				if shouldContinue {
 					continue
 				}
 
-				ctx, cancel := context.WithCancel(context.Background())
-				err = s.SetWithExpiry(name, "true", 0)
-				if err != nil {
-					l.Errorw("unable to set chain name as true", "error", err)
-				}
-
-				rpcwatcher.Start(watcher, ctx)
 				watchers[name] = watcherInstance{
 					watcher: watcher,
 					cancel:  cancel,
@@ -192,6 +158,43 @@ func main() {
 			}
 		}
 	}
+}
+
+func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, config *rpcwatcher.Config, db *database.Instance, s *store.Store,
+	l *zap.SugaredLogger, isNewChain bool) (map[string]cnsmodels.Chain, *rpcwatcher.Watcher, context.CancelFunc, bool) {
+	eventMappings := standardMappings
+
+	if chainName == "cosmos-hub" { // special case, needs to observe new blocks too
+		eventMappings = cosmosHubMappings
+	}
+
+	watcher, err := rpcwatcher.NewWatcher(endpoint(chainName), chainName, l, config.ApiURL, db, s, eventsToSubTo, eventMappings)
+
+	if err != nil {
+		if isNewChain {
+			var dnsErr *net.DNSError
+			if errors.As(err, &dnsErr) || strings.Contains(err.Error(), "connection refused") {
+				l.Infow("chain not yet available", "name", chainName)
+				return chainsMap, nil, nil, true
+			}
+		} else {
+			delete(chainsMap, chainName)
+		}
+
+		l.Errorw("cannot create chain", "error", err)
+		return chainsMap, nil, nil, true
+	}
+
+	err = s.SetWithExpiry(chainName, "true", 0)
+	if err != nil {
+		l.Errorw("unable to set chain name as true", "error", err)
+	}
+
+	l.Debugw("connected", "chainName", chainName)
+	ctx, cancel := context.WithCancel(context.Background())
+	rpcwatcher.Start(watcher, ctx)
+
+	return chainsMap, watcher, cancel, false
 }
 
 func mapChains(c []cnsmodels.Chain) map[string]cnsmodels.Chain {
