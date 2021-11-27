@@ -8,7 +8,7 @@ on:
     types: [completed]
 
 jobs:
-  api-server:
+  emeris-rpcwatcher:
     runs-on: self-hosted
     steps:
       - name: Checkout
