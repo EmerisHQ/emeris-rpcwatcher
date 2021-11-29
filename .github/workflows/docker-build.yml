@@ -16,7 +16,7 @@ on:
       - go.sum
 
 jobs:
-  api-server:
+  emeris-rpcwatcher:
     runs-on: self-hosted
     steps:
       - name: Checkout
