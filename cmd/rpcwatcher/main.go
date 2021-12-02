@@ -127,6 +127,11 @@ func main() {
 	for range time.Tick(1 * time.Second) {
 
 		ch, err := db.Chains()
+		// FIXME: should we panic here or something else?
+		if err != nil {
+			l.Errorw("cannot retrieve chains", "error", err)
+			continue
+		}
 
 		newChainsMap := mapChains(ch)
 
