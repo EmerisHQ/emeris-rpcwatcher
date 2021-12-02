@@ -65,7 +65,7 @@ func main() {
 	if c.Debug {
 		go func() {
 			l.Debugw("starting profiling server", "port", "6060")
-			err := http.ListenAndServe(":6060", nil)
+			err := http.ListenAndServe("localhost:6060", nil)
 			if err != nil {
 				l.Panicw("cannot run profiling server", "error", err)
 			}
