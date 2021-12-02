@@ -11,12 +11,14 @@ import (
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-func isPoolCoin(denom string) bool {
-	if len(denom) < 4 {
-		return false
-	}
-	return denom[:4] == "pool"
-}
+// FIXME: Lint failure (2021/12/02), commented out as unused.
+// If still commented out months in the future, just remove
+//func isPoolCoin(denom string) bool {
+//	if len(denom) < 4 {
+//		return false
+//	}
+//	return denom[:4] == "pool"
+//}
 
 func isIBCToken(denom string) bool {
 	if len(denom) < 4 {
@@ -47,8 +49,11 @@ func formatDenom(w *Watcher, data coretypes.ResultEvent) (cnsmodels.Denom, error
 	}
 
 	coins, err := sdktypes.ParseCoinsNormalized(depositCoins[0])
-	cosmoshub, err := w.d.Chain("cosmos-hub")
+	if err != nil {
+		return d, err
+	}
 
+	cosmoshub, err := w.d.Chain("cosmos-hub")
 	if err != nil {
 		return d, err
 	}
@@ -61,6 +66,9 @@ func formatDenom(w *Watcher, data coretypes.ResultEvent) (cnsmodels.Denom, error
 			w.l.Debugw("querying verified trace for coin", "coin", coin.Denom)
 
 			u, err := url.Parse(w.apiUrl)
+			if err != nil {
+				return d, err
+			}
 			u.Path = fmt.Sprintf("chain/%s/denom/verify_trace/%s", "cosmos-hub", coin.Denom[4:])
 
 			endpoint := u.String()
