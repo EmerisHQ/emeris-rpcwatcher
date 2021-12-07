@@ -11,14 +11,12 @@ replace (
 
 require (
 	github.com/alicebob/miniredis/v2 v2.16.1
-	github.com/allinbits/demeris-backend-models v0.0.0-20211111161516-d003d244b56e
+	github.com/allinbits/demeris-backend-models v0.0.0-20211203174011-b5241fc065df
 	github.com/allinbits/starport-operator v0.0.1-alpha.26
 	github.com/cockroachdb/cockroach-go/v2 v2.1.1
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/cosmos/gaia/v5 v5.0.4
-	github.com/ethereum/go-ethereum v1.10.12
 	github.com/gin-gonic/gin v1.7.4
-	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/go-redis/redis/v8 v8.8.3
 	github.com/gravity-devs/liquidity v1.2.9
@@ -65,6 +63,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1-0.20200219035652-afde56e7acac // indirect
 	github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b // indirect
 	github.com/enigmampc/btcutil v1.0.3-0.20200723161021-e2fb6adb2a25 // indirect
+	github.com/ethereum/go-ethereum v1.10.12 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
@@ -73,6 +72,7 @@ require (
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
+	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/gateway v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.3 // indirect
