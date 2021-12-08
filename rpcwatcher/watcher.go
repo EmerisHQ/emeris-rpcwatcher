@@ -657,7 +657,7 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		w.l.Errorw("cannot create gRPC client", "error", err, "address", "chain name", w.Name, fmt.Sprintf("%s:%d", w.Name, grpcPort))
+		w.l.Errorw("cannot create gRPC client", "error", err, "chain name", w.Name, "address", fmt.Sprintf("%s:%d", w.Name, grpcPort))
 	}
 
 	liquidityQuery := liquiditytypes.NewQueryClient(grpcConn)

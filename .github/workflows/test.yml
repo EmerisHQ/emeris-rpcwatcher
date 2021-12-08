@@ -6,6 +6,7 @@ on:
     paths:
       - cmd/**
       - rpcwatcher/**
+      - utils/**
       - go.mod
       - go.sum
 
