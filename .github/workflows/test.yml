@@ -3,6 +3,11 @@ name: Execute tests
 on:
   workflow_dispatch:
   push:
+    paths:
+      - cmd/**
+      - rpcwatcher/**
+      - go.mod
+      - go.sum
 
 jobs:
   test:
@@ -10,6 +15,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - uses: actions/cache@v2
+        with:
+          # In order:
+          # * Module download cache
+          # * Build cache (Linux)
+          # * Build cache (Mac)
+          # * Build cache (Windows)
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Setup go
         uses: actions/setup-go@v2
@@ -21,8 +40,5 @@ jobs:
           go env -w GOPRIVATE=github.com/allinbits/*
           git config --global url."https://git:${{ secrets.TENDERBOT_GIT_TOKEN }}@github.com".insteadOf "https://github.com"
 
-      - name: Build
-        run: go build -v ./...
-
       - name: Test
-        run: go test -v -race ./...
+        run: make test
