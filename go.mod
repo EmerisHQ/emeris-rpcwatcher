@@ -11,7 +11,7 @@ replace (
 
 require (
 	github.com/alicebob/miniredis/v2 v2.16.1
-	github.com/allinbits/demeris-backend-models v0.0.0-20211111161516-d003d244b56e
+	github.com/allinbits/demeris-backend-models v0.0.0-20211203174011-b5241fc065df
 	github.com/allinbits/starport-operator v0.0.1-alpha.26
 	github.com/cockroachdb/cockroach-go/v2 v2.1.1
 	github.com/cosmos/cosmos-sdk v0.42.8
@@ -160,6 +160,7 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/sys v0.0.0-20210816183151-1e6c022a8912 // indirect
