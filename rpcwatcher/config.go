@@ -1,8 +1,8 @@
 package rpcwatcher
 
 import (
+	"github.com/allinbits/demeris-backend-models/validation"
 	"github.com/allinbits/emeris-rpcwatcher/utils/configuration"
-	"github.com/allinbits/emeris-rpcwatcher/utils/validation"
 	"github.com/go-playground/validator/v10"
 )
 
