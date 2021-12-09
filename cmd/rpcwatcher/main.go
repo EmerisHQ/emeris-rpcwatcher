@@ -113,6 +113,7 @@ func main() {
 		ch, err := db.Chains()
 		if err != nil {
 			l.Errorw("cannot get chains from db", "error", err)
+			continue
 		}
 
 		newChainsMap := mapChains(ch)

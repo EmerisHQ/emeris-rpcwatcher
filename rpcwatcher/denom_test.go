@@ -6,37 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsPoolCoin(t *testing.T) {
-	tests := []struct {
-		name     string
-		coin     string
-		expValue bool
-	}{
-		{
-			"coin with length less than 4",
-			"new",
-			false,
-		},
-		{
-			"invalid pool coin",
-			"testcoin",
-			false,
-		},
-		{
-			"valid pool coin",
-			"pool96EF6EA6E5AC828ED87E8D07E7AE2A8180570ADD212117B2DA6F0B75D17A6295",
-			true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			value := isPoolCoin(tt.coin)
-			require.Equal(t, tt.expValue, value)
-		})
-	}
-}
-
 func TestIsIBCToken(t *testing.T) {
 	tests := []struct {
 		name     string

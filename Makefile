@@ -11,5 +11,11 @@ all: $(OBJS)
 clean:
 	@rm -rf build
 
+test:
+	go test -v -race ./...
+
+lint:
+	golangci-lint run ./...
+
 $(OBJS):
 	go build -o build/$@ -ldflags='-X main.Version=${BRANCH}-${COMMIT}' ${EXTRAFLAGS} ${BASEPKG}/cmd/$@

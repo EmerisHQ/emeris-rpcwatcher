@@ -33,7 +33,7 @@ func (w *watchdog) Start() {
 	w.timer = time.AfterFunc(w.timeoutAmount, w.fireTimeoutSignal)
 
 	go func() {
-		for {
+		for { //nolint Intentional forever loop
 			select {
 			case <-w.ping:
 				if !w.timer.Stop() {
