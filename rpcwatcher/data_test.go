@@ -98,7 +98,7 @@ func txJSONToResultEvent(t *testing.T, data []byte) coretypes.ResultEvent {
 }
 
 func ibcReceivePacketEvent(t *testing.T, ackSuccess bool) coretypes.ResultEvent {
-	data, err := ioutil.ReadFile("ibc-transfer-receive-tx.json")
+	data, err := ioutil.ReadFile("./testdata/ibc-transfer-receive-tx.json")
 	require.NoError(t, err)
 	event := txJSONToResultEvent(t, data)
 	if !ackSuccess {
@@ -113,7 +113,7 @@ func ibcReceivePacketEvent(t *testing.T, ackSuccess bool) coretypes.ResultEvent 
 }
 
 func ibcAckTxEvent(t *testing.T, withErrorField bool) coretypes.ResultEvent {
-	data, err := ioutil.ReadFile("ibc-transfer-transfer-tx-ack.json")
+	data, err := ioutil.ReadFile("./testdata/ibc-transfer-transfer-tx-ack.json")
 	require.NoError(t, err)
 	event := txJSONToResultEvent(t, data)
 	if withErrorField {
@@ -128,7 +128,7 @@ func ibcAckTxEvent(t *testing.T, withErrorField bool) coretypes.ResultEvent {
 }
 
 func ibcTimeoutEvent(t *testing.T) coretypes.ResultEvent {
-	data, err := ioutil.ReadFile("ibc-transfer-timeout-tx.json")
+	data, err := ioutil.ReadFile("./testdata/ibc-transfer-timeout-tx.json")
 	require.NoError(t, err)
 	event := txJSONToResultEvent(t, data)
 	txHashSlice, exists := event.Events["tx.hash"]
@@ -139,7 +139,7 @@ func ibcTimeoutEvent(t *testing.T) coretypes.ResultEvent {
 }
 
 func ibcTransferEvent(t *testing.T) coretypes.ResultEvent {
-	data, err := ioutil.ReadFile("ibc-transfer-transfer-tx.json")
+	data, err := ioutil.ReadFile("./testdata/ibc-transfer-transfer-tx.json")
 	require.NoError(t, err)
 	event := txJSONToResultEvent(t, data)
 	txHashSlice, exists := event.Events["tx.hash"]
@@ -150,7 +150,7 @@ func ibcTransferEvent(t *testing.T) coretypes.ResultEvent {
 }
 
 func nonIBCTransferEvent(t *testing.T, codeZero bool) coretypes.ResultEvent {
-	data, err := ioutil.ReadFile("non-ibc-transfer-tx.json")
+	data, err := ioutil.ReadFile("./testdata/non-ibc-transfer-tx.json")
 	require.NoError(t, err)
 	event := txJSONToResultEvent(t, data)
 	if !codeZero {
@@ -167,7 +167,7 @@ func nonIBCTransferEvent(t *testing.T, codeZero bool) coretypes.ResultEvent {
 }
 
 func swapTransactionEvent(t *testing.T) coretypes.ResultEvent {
-	data, err := ioutil.ReadFile("swap-tx.json")
+	data, err := ioutil.ReadFile("./testdata/swap-tx.json")
 	require.NoError(t, err)
 	event := txJSONToResultEvent(t, data)
 	txHashSlice, exists := event.Events["tx.hash"]
@@ -178,7 +178,7 @@ func swapTransactionEvent(t *testing.T) coretypes.ResultEvent {
 }
 
 func createPoolEvent(t *testing.T, newDenom bool) coretypes.ResultEvent {
-	data, err := ioutil.ReadFile("tx-create-lp.json")
+	data, err := ioutil.ReadFile("./testdata/tx-create-lp.json")
 	require.NoError(t, err)
 	event := txJSONToResultEvent(t, data)
 	if newDenom {
