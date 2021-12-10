@@ -21,16 +21,20 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/go-redis/redis/v8 v8.8.3
+	github.com/gorilla/mux v1.8.0
 	github.com/gravity-devs/liquidity v1.2.9
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/iamolegga/enviper v1.2.1
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/lib/pq v1.10.3
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/r3labs/diff v1.1.0
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/tendermint/tendermint v0.34.11
+	github.com/tendermint/tm-db v0.6.4
 	go.uber.org/zap v1.17.0
 	google.golang.org/grpc v1.37.0
 	k8s.io/api v0.21.1
@@ -86,10 +90,8 @@ require (
 	github.com/google/uuid v1.1.5 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
-	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
@@ -140,7 +142,6 @@ require (
 	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
-	github.com/spf13/cobra v1.1.3 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
@@ -149,7 +150,6 @@ require (
 	github.com/tendermint/btcd v0.1.1 // indirect
 	github.com/tendermint/crypto v0.0.0-20191022145703-50d29ede1e15 // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
-	github.com/tendermint/tm-db v0.6.4 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	github.com/zondax/hid v0.9.0 // indirect
