@@ -30,7 +30,6 @@ const nonZeroCodeErrFmt = "non-zero code on chain %s: %s"
 const (
 	EventsTx                = "tm.event='Tx'"
 	EventsBlock             = "tm.event='NewBlock'"
-	defaultRPCPort          = 26657
 	grpcPort                = 9090
 	defaultWSClientReadWait = 30 * time.Second
 	defaultWatchdogTimeout  = 20 * time.Second
