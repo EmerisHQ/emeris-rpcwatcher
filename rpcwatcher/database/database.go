@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
-	dbutils "github.com/allinbits/emeris-rpcwatcher/utils/database"
+	dbutils "github.com/allinbits/emeris-utils/database"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )

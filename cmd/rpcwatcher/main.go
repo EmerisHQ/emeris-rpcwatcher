@@ -14,8 +14,8 @@ import (
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	"github.com/allinbits/emeris-rpcwatcher/utils/logging"
-	"github.com/allinbits/emeris-rpcwatcher/utils/store"
+	"github.com/allinbits/emeris-utils/logging"
+	"github.com/allinbits/emeris-utils/store"
 
 	_ "net/http/pprof"
 )
