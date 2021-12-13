@@ -2,18 +2,10 @@ name: Build docker images
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - Dockerfile
-      - cmd/**
-      - helm/**
-      - models/**
-      - rpcwatcher/**
-      - utils/**
-      - go.mod
-      - go.sum
+  workflow_run:
+    workflows: [Execute tests]
+    branches: [main]
+    types: [completed]
 
 jobs:
   emeris-rpcwatcher:
