@@ -9,13 +9,16 @@ replace (
 )
 
 require (
+	github.com/alicebob/miniredis/v2 v2.16.0
 	github.com/allinbits/demeris-backend-models v0.0.0-20211111161516-d003d244b56e
-	github.com/allinbits/emeris-utils v0.0.0-20211210141153-0564b764708d
+	github.com/allinbits/emeris-utils v0.0.0-20211214202336-3b5d098a50d0
+	github.com/cockroachdb/cockroach-go/v2 v2.1.1
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gravity-devs/liquidity v1.2.9
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/r3labs/diff v1.1.0
+	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/tendermint/tendermint v0.34.11
 	go.uber.org/zap v1.17.0
 	google.golang.org/grpc v1.37.0
@@ -26,13 +29,13 @@ require (
 	github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Workiva/go-datastructures v1.0.52 // indirect
+	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/armon/go-metrics v0.3.8 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/cockroachdb/cockroach-go/v2 v2.1.1 // indirect
 	github.com/confio/ics23/go v0.6.6 // indirect
 	github.com/cosmos/gaia/v5 v5.0.4 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
@@ -124,7 +127,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1 // indirect
-	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
@@ -133,6 +135,7 @@ require (
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tendermint/tm-db v0.6.4 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	github.com/zondax/hid v0.9.0 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
 	go.opentelemetry.io/otel v0.20.0 // indirect

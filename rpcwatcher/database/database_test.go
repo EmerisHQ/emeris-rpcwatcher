@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
-	dbutils "github.com/allinbits/emeris-rpcwatcher/utils/database"
+	dbutils "github.com/allinbits/emeris-utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 )
