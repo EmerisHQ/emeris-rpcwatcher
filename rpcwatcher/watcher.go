@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	"github.com/allinbits/emeris-rpcwatcher/utils/store"
+	"github.com/allinbits/emeris-utils/store"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	liquiditytypes "github.com/gravity-devs/liquidity/x/liquidity/types"

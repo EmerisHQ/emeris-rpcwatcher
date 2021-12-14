@@ -7,9 +7,9 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	dbutils "github.com/allinbits/emeris-rpcwatcher/utils/database"
-	"github.com/allinbits/emeris-rpcwatcher/utils/logging"
-	"github.com/allinbits/emeris-rpcwatcher/utils/store"
+	dbutils "github.com/allinbits/emeris-utils/database"
+	"github.com/allinbits/emeris-utils/logging"
+	"github.com/allinbits/emeris-utils/store"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
