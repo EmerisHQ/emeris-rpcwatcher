@@ -11,7 +11,7 @@ replace (
 require (
 	github.com/alicebob/miniredis/v2 v2.16.0
 	github.com/allinbits/demeris-backend-models v0.0.0-20211202094520-07017cad0218
-	github.com/allinbits/emeris-utils v0.0.0-20211210104150-283219be3359
+	github.com/allinbits/emeris-utils v0.0.0-20211214203740-3e2cdc43f1fb
 	github.com/cockroachdb/cockroach-go/v2 v2.1.1
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/go-playground/validator/v10 v10.9.0
