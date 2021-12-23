@@ -12,7 +12,7 @@ clean:
 	@rm -rf build
 
 test:
-	go test -v -race ./...
+	go test -v -race ./... -cover
 
 lint:
 	golangci-lint run ./...
