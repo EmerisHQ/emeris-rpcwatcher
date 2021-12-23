@@ -125,7 +125,8 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 	resource, err = pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
 	require.NoError(t, err)
 
-	time.Sleep(5 * time.Second)
+	// TODO: need workaround to check node logs whether blocks started creating
+	time.Sleep(10 * time.Second)
 
 	t.Log(fmt.Sprintf("- [%s] SPUN UP IN CONTAINER %s from %s", tc.chainID,
 		resource.Container.Name, resource.Container.Config.Image))
@@ -195,4 +196,43 @@ func getLoggingChain(chns []testChain, rsr *dockertest.Resource) testChain {
 		}
 	}
 	return testChain{}
+}
+
+func spinRelayer(t *testing.T) {
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
+	}
+
+	hostNetwork, err := pool.Client.NetworkInfo("host")
+	require.NoError(t, err)
+
+	network := &dockertest.Network{Network: hostNetwork}
+
+	dockerOpts := &dockertest.RunOptions{
+		Name:       "relayer",
+		Repository: "relayer", // Name must match Repository
+		Tag:        "latest",  // Must match docker default build tag
+		Cmd: []string{
+			"49443",
+		},
+		Networks: []*dockertest.Network{network},
+	}
+
+	require.NoError(t, removeTestContainer(pool, "relayer"))
+
+	// create the proper docker image with port forwarding setup
+	d, err := os.Getwd()
+	require.NoError(t, err)
+
+	buildOpts := &dockertest.BuildOptions{
+		Dockerfile: "integration/setup/Dockerfile.relayer",
+		ContextDir: path.Dir(d),
+	}
+	resource, err := pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
+	require.NoError(t, err)
+
+	t.Log(fmt.Sprintf("- [%s] SPUN UP IN CONTAINER %s from %s", "relayer",
+		resource.Container.Name, resource.Container.Config.Image))
+
 }

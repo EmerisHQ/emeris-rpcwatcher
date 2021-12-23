@@ -1,0 +1,36 @@
+
+
+FROM golang:alpine as BUILD
+
+
+WORKDIR /rly
+
+RUN apk update && \
+    apk --no-cache add make git
+
+RUN git clone https://github.com/cosmos/relayer.git
+
+WORKDIR /rly/relayer
+
+RUN git checkout v0.9.3 && make install
+
+FROM alpine:latest
+
+ENV RELAYER /rly/relayer
+
+# Define working directory
+WORKDIR $RELAYER
+
+# Copy binary from BUILD
+COPY --from=BUILD /go/bin/rly /usr/bin/rly
+
+USER root
+
+COPY integration/setup/relayer-setup.sh .
+
+RUN chmod 777 relayer-setup.sh
+
+RUN apk update && \
+    apk --no-cache add curl
+
+ENTRYPOINT [ "./relayer-setup.sh" ]

@@ -1,28 +1,34 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestSetup(t *testing.T) {
-	chains := spinUpTestChains(t, gaiaTestChain, akashTestChain)
-	require.Len(t, chains, 2)
+var testchains = []testChain{gaiaTestChain, akashTestChain}
 
-	response, err := rest.GetRequest(fmt.Sprintf("http://localhost:%s/status", chains[0].rpcPort))
+type IntegrationTestSuite struct {
+	suite.Suite
 
-	require.NoError(t, err)
+	chains []testChain
+}
 
-	t.Log(string(response))
+func (s *IntegrationTestSuite) SetupSuite() {
+	// s.chains = spinUpTestChains(s.T(), testchains...)
+	// s.Require().Len(s.chains, len(testchains))
+	spinRelayer(s.T())
+}
 
-	response2, err := rest.GetRequest(fmt.Sprintf("http://localhost:%s/status", chains[1].rpcPort))
+func (s *IntegrationTestSuite) TestDummy() {
+	// time.Sleep(10 * time.Minute)
+	s.Require().False(true)
+}
 
-	require.NoError(t, err)
+func (s *IntegrationTestSuite) TearDownSuite() {
+	s.T().Log("tearing down integration test suite")
+}
 
-	t.Log(string(response2))
-
-	require.True(t, false)
+func TestIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(IntegrationTestSuite))
 }

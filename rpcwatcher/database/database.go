@@ -2,9 +2,11 @@ package database
 
 import (
 	"fmt"
+	"log"
 
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	dbutils "github.com/allinbits/emeris-utils/database"
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
@@ -95,4 +97,29 @@ func (i *Instance) GetCounterParty(chain, srcChannel string) ([]cnsmodels.Channe
 	}
 
 	return c, nil
+}
+
+func SetupTestDB(migrations []string) (testserver.TestServer, *Instance) {
+	// start new cockroachDB test server
+	ts, err := testserver.NewTestServer()
+	checkNoError(err)
+
+	err = ts.WaitForInit()
+	checkNoError(err)
+
+	// create new instance of db
+	i, err := New(ts.PGURL().String())
+	checkNoError(err)
+
+	// create and insert data into db
+	err = dbutils.RunMigrations(ts.PGURL().String(), migrations)
+	checkNoError(err)
+
+	return ts, i
+}
+
+func checkNoError(err error) {
+	if err != nil {
+		log.Fatalf("got error: %s", err)
+	}
 }
