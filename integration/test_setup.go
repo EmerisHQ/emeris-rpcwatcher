@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -30,10 +29,6 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 		contDone  = make(chan struct{})
 	)
 
-	// Create temporary integration test directory
-	dir, err := ioutil.TempDir("", "integration-test")
-	require.NoError(t, err)
-
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 	pool, err := dockertest.NewPool("")
 	if err != nil {
@@ -44,7 +39,7 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 	for i, tc := range testChains {
 		chains[i] = tc
 		wg.Add(1)
-		go spinUpTestContainer(t, rchan, pool, dir, &wg, chains[i])
+		go spinUpTestContainer(t, rchan, pool, &wg, chains[i])
 	}
 
 	// wait for all containers to be created
@@ -74,7 +69,7 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 	close(rchan)
 
 	// start the wait for cleanup function
-	go cleanUpTest(t, testsDone, contDone, resources, pool, dir, chains)
+	go cleanUpTest(t, testsDone, contDone, resources, pool, chains)
 
 	// set the test cleanup function
 	t.Cleanup(func() {
@@ -90,7 +85,7 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 // A docker image is built for each chain using its provided configuration.
 // This image is then ran using the options set below.
 func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *dockertest.Pool,
-	dir string, wg *sync.WaitGroup, tc testChain) {
+	wg *sync.WaitGroup, tc testChain) {
 	defer wg.Done()
 	var (
 		err error
@@ -108,7 +103,8 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 		ExposedPorts: []string{"26657"},
 		Cmd: []string{
 			tc.chainID,
-			tc.keyInfo.seed,
+			tc.accountInfo.seed,
+			tc.accountInfo.denom,
 		},
 	}
 
@@ -164,14 +160,9 @@ func removeTestContainer(pool *dockertest.Pool, containerName string) error {
 // cleanUpTest is called as a goroutine to wait until the tests have completed and
 // cleans up the docker containers
 func cleanUpTest(t *testing.T, testsDone <-chan struct{}, contDone chan<- struct{}, resources []*dockertest.Resource,
-	pool *dockertest.Pool, dir string, chains []testChain) {
+	pool *dockertest.Pool, chains []testChain) {
 	// block here until tests are complete
 	<-testsDone
-
-	// clean up the tmp dir
-	if err := os.RemoveAll(dir); err != nil {
-		require.NoError(t, fmt.Errorf("{cleanUpTest} failed to rm dir(%w), %s ", err, dir))
-	}
 
 	// remove all the docker containers
 	for _, r := range resources {
@@ -196,43 +187,4 @@ func getLoggingChain(chns []testChain, rsr *dockertest.Resource) testChain {
 		}
 	}
 	return testChain{}
-}
-
-func spinRelayer(t *testing.T) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
-	}
-
-	hostNetwork, err := pool.Client.NetworkInfo("host")
-	require.NoError(t, err)
-
-	network := &dockertest.Network{Network: hostNetwork}
-
-	dockerOpts := &dockertest.RunOptions{
-		Name:       "relayer",
-		Repository: "relayer", // Name must match Repository
-		Tag:        "latest",  // Must match docker default build tag
-		Cmd: []string{
-			"49443",
-		},
-		Networks: []*dockertest.Network{network},
-	}
-
-	require.NoError(t, removeTestContainer(pool, "relayer"))
-
-	// create the proper docker image with port forwarding setup
-	d, err := os.Getwd()
-	require.NoError(t, err)
-
-	buildOpts := &dockertest.BuildOptions{
-		Dockerfile: "integration/setup/Dockerfile.relayer",
-		ContextDir: path.Dir(d),
-	}
-	resource, err := pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
-	require.NoError(t, err)
-
-	t.Log(fmt.Sprintf("- [%s] SPUN UP IN CONTAINER %s from %s", "relayer",
-		resource.Container.Name, resource.Container.Config.Image))
-
 }

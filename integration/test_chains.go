@@ -3,17 +3,20 @@ package integration
 import "github.com/ory/dockertest/v3"
 
 type testChain struct {
-	chainID    string
-	keyInfo    keyInfo
-	dockerfile string
-	binaryName string
-	rpcPort    string
-	resource   *dockertest.Resource
+	chainID     string
+	accountInfo accountInfo
+	dockerfile  string
+	binaryName  string
+	rpcPort     string
+	resource    *dockertest.Resource
 }
 
-type keyInfo struct {
-	seed    string
-	address string
+type accountInfo struct {
+	seed     string
+	address  string
+	prefix   string
+	denom    string
+	channels map[string]string
 }
 
 const (
@@ -28,9 +31,11 @@ const (
 var (
 	gaiaTestChain = testChain{
 		chainID: "cosmos-hub",
-		keyInfo: keyInfo{
+		accountInfo: accountInfo{
 			seed:    SEED1,
 			address: "cosmos1gclfxn8qyeytlupzjgzm6cmaxsdp7nlnzesjxa",
+			prefix:  "cosmos",
+			denom:   "uatom",
 		},
 		binaryName: "gaiad",
 		dockerfile: "integration/setup/Dockerfile.gaiatest",
@@ -38,9 +43,11 @@ var (
 
 	akashTestChain = testChain{
 		chainID: "akash",
-		keyInfo: keyInfo{
+		accountInfo: accountInfo{
 			seed:    SEED1,
 			address: "akash1gclfxn8qyeytlupzjgzm6cmaxsdp7nln0za4l8",
+			prefix:  "akash",
+			denom:   "uakt",
 		},
 		binaryName: "akash",
 		dockerfile: "integration/setup/Dockerfile.akashtest",
