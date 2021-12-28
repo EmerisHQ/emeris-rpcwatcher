@@ -3,31 +3,32 @@
 set -o errexit -o nounset
 
 TEMPDIR=$1
-CHAINID1=$2
-DENOM1=$3
-PREFIX1=$4
-SEEDS1=$5
-RPCPORT1=$6
-CHAINID2=$7
-DENOM2=$8
-PREFIX2=$9
-SEEDS2=${10}
-RPCPORT2=${11}
+RLYDIR=$2
+PTH=$3
+CHAINID1=$4
+DENOM1=$5
+PREFIX1=$6
+SEEDS1=$7
+RPCPORT1=$8
+CHAINID2=$9
+DENOM2=${10}
+PREFIX2=${11}
+SEEDS2=${12}
+RPCPORT2=${13}
 
 cd $TEMPDIR
 
-export RELAYER_HOME=$TEMPDIR/.relayer_test
-export DENOM=stake
+export RELAYER_HOME=$TEMPDIR/$RLYDIR
 export GH_URL=https://github.com/cosmos/relayer.git
 export CHAIN_VERSION=492378a804a6d533d6635ab6eabe39d8bfab2c57
 export RLYKEY=key
 export DOMAIN=localhost
 export ACCOUNT_PREFIX=cosmos
-export PTH=rly_test
 export RELAYER_DAEMON=./build/rly
 
 CHAINS=2
 
+# check relayer code exists
 if [ -d "relayer" ]; then
     cd relayer
 else

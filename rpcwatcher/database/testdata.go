@@ -1,13 +1,9 @@
 package database
 
 const (
-	TestChainName = "cosmos-hub"
-)
-
-var (
-	TestDBMigrations = []string{
-		`CREATE DATABASE IF NOT EXISTS cns`,
-		`CREATE TABLE IF NOT EXISTS cns.chains (
+	TestChainName  = "cosmos-hub"
+	CreateDB       = `CREATE DATABASE IF NOT EXISTS cns`
+	CreateCNSTable = `CREATE TABLE IF NOT EXISTS cns.chains (
 		id serial unique primary key,
 		enabled boolean default false,
 		chain_name string not null,
@@ -21,7 +17,13 @@ var (
 		node_info jsonb not null,
 		derivation_path string not null,
 		unique(chain_name)
-		)`,
+		)`
+)
+
+var (
+	TestDBMigrations = []string{
+		CreateDB,
+		CreateCNSTable,
 		`
 	INSERT INTO cns.chains 
 		(

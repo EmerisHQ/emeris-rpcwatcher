@@ -6,6 +6,7 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/jmoiron/sqlx => github.com/abraithwaite/sqlx v1.3.2-0.20210331022513-df9bf9884350
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+	github.com/cosmos/relayer => github.com/cosmos/relayer v1.0.0-rc1.0.20210415100557-492378a804a6
 )
 
 require (
@@ -14,6 +15,7 @@ require (
 	github.com/allinbits/emeris-utils v0.0.0-20211214203740-3e2cdc43f1fb
 	github.com/cockroachdb/cockroach-go/v2 v2.1.1
 	github.com/cosmos/cosmos-sdk v0.42.8
+	github.com/cosmos/relayer v1.0.0-rc1.0.20210426142722-71e9d4d9142e
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gravity-devs/liquidity v1.2.9
 	github.com/jackc/pgx/v4 v4.10.1
@@ -35,6 +37,7 @@ require (
 	github.com/Workiva/go-datastructures v1.0.52 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/armon/go-metrics v0.3.8 // indirect
+	github.com/avast/retry-go v2.6.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
@@ -160,6 +163,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20210816183151-1e6c022a8912 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.6 // indirect
