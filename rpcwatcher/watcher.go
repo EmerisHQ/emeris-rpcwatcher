@@ -38,6 +38,28 @@ const (
 	defaultTimeGap          = 750 * time.Millisecond
 )
 
+var (
+	EventsToSubTo = []string{EventsTx, EventsBlock}
+
+	StandardMappings = map[string][]DataHandler{
+		EventsTx: {
+			HandleMessage,
+		},
+		EventsBlock: {
+			HandleNewBlock,
+		},
+	}
+	CosmosHubMappings = map[string][]DataHandler{
+		EventsTx: {
+			HandleMessage,
+		},
+		EventsBlock: {
+			HandleNewBlock,
+			HandleCosmosHubBlock,
+		},
+	}
+)
+
 type DataHandler func(watcher *Watcher, event coretypes.ResultEvent)
 
 type WsResponse struct {

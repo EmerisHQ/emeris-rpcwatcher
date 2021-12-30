@@ -15,9 +15,12 @@ type testChain struct {
 	rpcPort     string
 	resource    *dockertest.Resource
 	channels    map[string]string
+	// dummy second address to test txs
+	testAddress string
 }
 
 type accountInfo struct {
+	keyname      string
 	seed         string
 	address      string
 	prefix       string
@@ -38,27 +41,31 @@ var (
 	gaiaTestChain = testChain{
 		chainID: "cosmos-hub",
 		accountInfo: accountInfo{
+			keyname:      "validator",
 			seed:         SEED1,
 			address:      "cosmos1gclfxn8qyeytlupzjgzm6cmaxsdp7nlnzesjxa",
 			prefix:       "cosmos",
 			denom:        "uatom",
 			displayDenom: "ATOM",
 		},
-		binaryName: "gaiad",
-		dockerfile: "integration/setup/Dockerfile.gaiatest",
+		binaryName:  "gaiad",
+		dockerfile:  "integration/setup/Dockerfile.gaiatest",
+		testAddress: "cosmos12tkgplyat382h8eznp0ams3uz2gsukz7a9h76s",
 	}
 
 	akashTestChain = testChain{
 		chainID: "akash",
 		accountInfo: accountInfo{
+			keyname:      "validator",
 			seed:         SEED1,
 			address:      "akash1gclfxn8qyeytlupzjgzm6cmaxsdp7nln0za4l8",
 			prefix:       "akash",
 			denom:        "uakt",
 			displayDenom: "AKT",
 		},
-		binaryName: "akash",
-		dockerfile: "integration/setup/Dockerfile.akashtest",
+		binaryName:  "akash",
+		dockerfile:  "integration/setup/Dockerfile.akashtest",
+		testAddress: "akash12tkgplyat382h8eznp0ams3uz2gsukz7s76er2",
 	}
 )
 
