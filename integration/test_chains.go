@@ -75,7 +75,7 @@ func getInsertQueryValue(index string, chain testChain) string {
 	for k, v := range chain.channels {
 		value = value + `"` + k + `": "` + v + `"`
 		if i != len(chain.channels)-1 {
-			value = value + `,`
+			value += `,`
 		}
 		i++
 	}
@@ -100,9 +100,9 @@ func getMigrations(chains []testChain) []string {
 	) 
 	VALUES `
 	for i, chain := range chains {
-		insertQuery = insertQuery + getInsertQueryValue(fmt.Sprintf("%d", i+1), chain)
+		insertQuery += getInsertQueryValue(fmt.Sprintf("%d", i+1), chain)
 		if i != len(chains)-1 {
-			insertQuery = insertQuery + `,`
+			insertQuery += `,`
 		}
 	}
 

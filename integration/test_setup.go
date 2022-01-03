@@ -19,7 +19,7 @@ import (
 // in parallel tests as all created resources are independent of eachother
 func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 	var (
-		resources []*dockertest.Resource
+		resources = make([]*dockertest.Resource, 0, len(testChains))
 		chains    = make([]testChain, len(testChains))
 
 		wg    sync.WaitGroup

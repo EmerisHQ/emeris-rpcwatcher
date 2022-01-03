@@ -1,3 +1,6 @@
+//go:build norace
+// +build norace
+
 package integration
 
 import (
@@ -105,6 +108,7 @@ func (s *IntegrationTestSuite) TestNonIBCTransfer() {
 		[]string{chain.binaryName, "tx", "bank", "send", chain.accountInfo.address, chain.testAddress,
 			fmt.Sprintf("100%s", chain.accountInfo.denom), fmt.Sprintf("--from=%s", chain.accountInfo.keyname),
 			"--keyring-backend=test", "-y", fmt.Sprintf("--chain-id=%s", chain.chainID),
+			"--broadcast-mode=async",
 		},
 		dockertest.ExecOptions{
 			StdOut: &stdOut,
@@ -125,7 +129,7 @@ func (s *IntegrationTestSuite) TestNonIBCTransfer() {
 	ticket, err := s.store.Get(store.GetKey(chain.chainID, txHash))
 	s.Require().NoError(err)
 	s.Require().Equal("complete", ticket.Status)
-	// s.Require().True(false)
+	s.Require().True(false)
 }
 
 // func (s *IntegrationTestSuite) TestDummy() {

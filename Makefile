@@ -14,6 +14,9 @@ clean:
 test:
 	go test -v -race ./...
 
+integration-test:
+	go test -tags norace ${BASEPKG}/integration
+
 lint:
 	golangci-lint run ./...
 
