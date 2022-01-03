@@ -29,6 +29,7 @@ import (
 const (
 	defaultRlyDir  = ".relayer_test"
 	defaultRlyPath = "rly_test"
+	defaultPort    = "transfer"
 )
 
 var testchains = []testChain{gaiaTestChain, akashTestChain}
@@ -41,6 +42,7 @@ type IntegrationTestSuite struct {
 	dbInstance *database.Instance
 	mr         *miniredis.Miniredis
 	store      *store.Store
+	ts         testserver.TestServer
 }
 
 func (s *IntegrationTestSuite) SetupSuite() {
@@ -66,13 +68,12 @@ func (s *IntegrationTestSuite) SetupSuite() {
 		s.chains[0].chainID: relayerCfg.Paths[defaultRlyPath].Dst.ChannelID,
 	}
 	// setup test DB
-	var ts testserver.TestServer
-	ts, s.dbInstance = database.SetupTestDB(getMigrations(s.chains))
-	defer ts.Stop()
+	s.ts, s.dbInstance = database.SetupTestDB(getMigrations(s.chains))
 
 	chains, err := s.dbInstance.Chains()
 	s.Require().NoError(err)
 	s.Require().Len(chains, len(s.chains))
+	// s.T().Logf("Chains: %+v", chains)
 
 	// logger
 	logger := logging.New(logging.LoggingConfig{
@@ -102,8 +103,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 
 func (s *IntegrationTestSuite) TestNonIBCTransfer() {
 	chain := s.chains[0]
-	var stdOut bytes.Buffer
-	var stdErr bytes.Buffer
+	var stdOut, stdErr bytes.Buffer
 	exitCode, err := s.chains[0].resource.Exec(
 		[]string{chain.binaryName, "tx", "bank", "send", chain.accountInfo.address, chain.testAddress,
 			fmt.Sprintf("100%s", chain.accountInfo.denom), fmt.Sprintf("--from=%s", chain.accountInfo.keyname),
@@ -129,7 +129,39 @@ func (s *IntegrationTestSuite) TestNonIBCTransfer() {
 	ticket, err := s.store.Get(store.GetKey(chain.chainID, txHash))
 	s.Require().NoError(err)
 	s.Require().Equal("complete", ticket.Status)
-	s.Require().True(false)
+}
+
+func (s *IntegrationTestSuite) TestIBCTransfer() {
+	s.Require().GreaterOrEqual(len(s.chains), 2)
+	chain1 := s.chains[0]
+	chain2 := s.chains[1]
+
+	var stdOut, stdErr bytes.Buffer
+	exitCode, err := chain1.resource.Exec(
+		[]string{chain1.binaryName, "tx", "ibc-transfer", "transfer", defaultPort, chain1.channels[chain2.chainID],
+			chain2.accountInfo.address, fmt.Sprintf("100%s", chain1.accountInfo.denom),
+			fmt.Sprintf("--from=%s", chain1.accountInfo.keyname), "--keyring-backend=test", "-y",
+			fmt.Sprintf("--chain-id=%s", chain1.chainID), "--broadcast-mode=async",
+		},
+		dockertest.ExecOptions{
+			StdOut: &stdOut,
+			StdErr: &stdErr,
+		})
+	s.Require().NoError(err)
+	s.T().Log(stdOut.String())
+	s.Require().Equal(0, exitCode, stdErr.String())
+	var txRes sdk.TxResponse
+	err = tmjson.Unmarshal(stdOut.Bytes(), &txRes)
+	s.Require().NoError(err)
+	s.Require().Equal(uint32(0), txRes.Code)
+	txHash := txRes.TxHash
+	err = s.store.CreateTicket(chain1.chainID, txHash, chain1.accountInfo.address)
+	s.Require().NoError(err)
+	// Wait for rpcwatcher to catch tx
+	time.Sleep(5 * time.Second)
+	ticket, err := s.store.Get(store.GetKey(chain1.chainID, txHash))
+	s.Require().NoError(err)
+	s.Require().Equal("transit", ticket.Status)
 }
 
 // func (s *IntegrationTestSuite) TestDummy() {
@@ -139,6 +171,7 @@ func (s *IntegrationTestSuite) TestNonIBCTransfer() {
 
 func (s *IntegrationTestSuite) TearDownSuite() {
 	s.T().Log("tearing down integration test suite")
+	s.ts.Stop()
 }
 
 func TestIntegrationTestSuite(t *testing.T) {
