@@ -445,7 +445,9 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 	}
 
 	defer func() {
-		grpcConn.Close()
+		if err := grpcConn.Close(); err != nil {
+			w.l.Errorw("cannot close gRPC client", "error", err, "chain_name", w.Name)
+		}
 	}()
 
 	liquidityQuery := liquiditytypes.NewQueryClient(grpcConn)
