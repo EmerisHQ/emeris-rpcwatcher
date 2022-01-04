@@ -443,6 +443,10 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 		w.l.Errorw("cannot create gRPC client", "error", err, "chain name", w.Name, "address", fmt.Sprintf("%s:%d", w.Name, grpcPort))
 	}
 
+	defer func() {
+		grpcConn.Close()
+	}()
+
 	liquidityQuery := liquiditytypes.NewQueryClient(grpcConn)
 	poolsRes, err := liquidityQuery.LiquidityPools(context.Background(), &liquiditytypes.QueryLiquidityPoolsRequest{})
 	if err != nil {
