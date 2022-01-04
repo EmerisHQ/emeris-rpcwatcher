@@ -440,7 +440,8 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		w.l.Errorw("cannot create gRPC client", "error", err, "chain name", w.Name, "address", fmt.Sprintf("%s:%d", w.Name, grpcPort))
+		w.l.Errorw("cannot create gRPC client", "error", err, "chain_name", w.Name, "address", fmt.Sprintf("%s:%d", w.Name, grpcPort))
+		return
 	}
 
 	defer func() {
