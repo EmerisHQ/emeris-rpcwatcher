@@ -136,12 +136,16 @@ func (s *IntegrationTestSuite) TestIBCTransfer() {
 	chain1 := s.chains[0]
 	chain2 := s.chains[1]
 
+	amount := "110"
+
+	// test ibc transfer
 	var stdOut, stdErr bytes.Buffer
 	exitCode, err := chain1.resource.Exec(
 		[]string{chain1.binaryName, "tx", "ibc-transfer", "transfer", defaultPort, chain1.channels[chain2.chainID],
-			chain2.accountInfo.address, fmt.Sprintf("100%s", chain1.accountInfo.denom),
+			chain2.accountInfo.address, fmt.Sprintf("%s%s", amount, chain1.accountInfo.denom),
 			fmt.Sprintf("--from=%s", chain1.accountInfo.keyname), "--keyring-backend=test", "-y",
-			fmt.Sprintf("--chain-id=%s", chain1.chainID), "--broadcast-mode=async",
+			fmt.Sprintf("--chain-id=%s", chain1.chainID),
+			"--broadcast-mode=async",
 		},
 		dockertest.ExecOptions{
 			StdOut: &stdOut,
@@ -159,9 +163,37 @@ func (s *IntegrationTestSuite) TestIBCTransfer() {
 	s.Require().NoError(err)
 	// Wait for rpcwatcher to catch tx
 	time.Sleep(5 * time.Second)
-	ticket, err := s.store.Get(store.GetKey(chain1.chainID, txHash))
+	key := store.GetKey(chain1.chainID, txHash)
+	ticket, err := s.store.Get(key)
 	s.Require().NoError(err)
 	s.Require().Equal("transit", ticket.Status)
+	stdOut = bytes.Buffer{}
+	stdErr = bytes.Buffer{}
+	// Wait for relayer to relay tx
+	time.Sleep(90 * time.Second)
+
+	// test ibc recv packet
+	stdOut = bytes.Buffer{}
+	stdErr = bytes.Buffer{}
+	exitCode, err = chain2.resource.Exec(
+		[]string{chain2.binaryName, "q", "txs", "--events", fmt.Sprintf("'message.action=recv_packet&fungible_token_packet.amount=%s'", amount)},
+		dockertest.ExecOptions{
+			StdOut: &stdOut,
+			StdErr: &stdErr,
+		})
+	s.Require().NoError(err)
+	s.T().Log(stdOut.String())
+	s.Require().Equal(0, exitCode, stdErr.String())
+	var res sdk.SearchTxsResult
+	err = tmjson.Unmarshal(stdOut.Bytes(), &res)
+	s.Require().NoError(err)
+	s.Require().Len(res.Txs, 1)
+	packetSeq := getPacketSequence(*res.Txs[0])
+	s.Require().NotEmpty(packetSeq)
+	ticket, err = s.store.Get(key)
+	s.Require().NoError(err)
+	s.T().Log("Ticket...", ticket)
+	// s.Require().True(false)
 }
 
 // func (s *IntegrationTestSuite) TestDummy() {

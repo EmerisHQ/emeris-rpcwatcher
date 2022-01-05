@@ -631,6 +631,7 @@ func HandleIBCSenderEvent(w *Watcher, data coretypes.ResultEvent, chainName, txH
 }
 
 func HandleIBCReceivePacket(w *Watcher, data coretypes.ResultEvent, chainName, txHash string, height int64) {
+	w.l.Debugw("called HandleIBCReceivePacket")
 	recvPacketSourcePort, ok := data.Events["recv_packet.packet_src_port"]
 	if !ok {
 		w.l.Errorf("recv_packet.packet_src_port not found")
@@ -715,6 +716,7 @@ func HandleIBCTimeoutPacket(w *Watcher, data coretypes.ResultEvent, chainName, t
 }
 
 func HandleIBCAckPacket(w *Watcher, data coretypes.ResultEvent, chainName, txHash string, height int64) {
+	w.l.Debugw("called HandleIBCAckPacket")
 	ackPacketSourceChannel, ok := data.Events["acknowledge_packet.packet_src_channel"]
 	if !ok {
 		w.l.Errorf("acknowledge_packet.packet_src_channel not found")
