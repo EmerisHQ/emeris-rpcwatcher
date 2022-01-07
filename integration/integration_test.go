@@ -1,6 +1,3 @@
-//go:build norace
-// +build norace
-
 package integration
 
 import (
@@ -50,8 +47,8 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.chains = spinUpTestChains(s.T(), testchains...)
 	s.Require().Len(s.chains, len(testchains))
 	cmd := exec.Command("/bin/sh", "setup/relayer-setup.sh", s.tempDir, defaultRlyDir, defaultRlyPath,
-		s.chains[0].chainID, s.chains[0].accountInfo.denom, s.chains[0].accountInfo.prefix, s.chains[0].accountInfo.seed, s.chains[0].rpcPort,
-		s.chains[1].chainID, s.chains[1].accountInfo.denom, s.chains[1].accountInfo.prefix, s.chains[1].accountInfo.seed, s.chains[1].rpcPort,
+		s.chains[0].chainID, s.chains[0].accountInfo.primaryDenom, s.chains[0].accountInfo.prefix, s.chains[0].accountInfo.seed, s.chains[0].rpcPort,
+		s.chains[1].chainID, s.chains[1].accountInfo.primaryDenom, s.chains[1].accountInfo.prefix, s.chains[1].accountInfo.seed, s.chains[1].rpcPort,
 	)
 	s.Require().NotNil(cmd)
 	err := cmd.Run()
@@ -73,7 +70,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	chains, err := s.dbInstance.Chains()
 	s.Require().NoError(err)
 	s.Require().Len(chains, len(s.chains))
-	// s.T().Logf("Chains: %+v", chains)
+	s.T().Logf("Chains: %+v", chains)
 
 	// logger
 	logger := logging.New(logging.LoggingConfig{
@@ -103,27 +100,19 @@ func (s *IntegrationTestSuite) SetupSuite() {
 
 func (s *IntegrationTestSuite) TestNonIBCTransfer() {
 	chain := s.chains[0]
-	var stdOut, stdErr bytes.Buffer
-	exitCode, err := s.chains[0].resource.Exec(
+	stdOut := s.executeDockerCmd(
+		chain,
 		[]string{chain.binaryName, "tx", "bank", "send", chain.accountInfo.address, chain.testAddress,
-			fmt.Sprintf("100%s", chain.accountInfo.denom), fmt.Sprintf("--from=%s", chain.accountInfo.keyname),
+			fmt.Sprintf("100%s", chain.accountInfo.primaryDenom), fmt.Sprintf("--from=%s", chain.accountInfo.keyname),
 			"--keyring-backend=test", "-y", fmt.Sprintf("--chain-id=%s", chain.chainID),
 			"--broadcast-mode=async",
 		},
-		dockertest.ExecOptions{
-			StdOut: &stdOut,
-			StdErr: &stdErr,
-		})
+	)
+	txRes := s.UnmarshalTx(stdOut.Bytes())
+	txHash := txRes.TxHash
+	err := s.store.CreateTicket(chain.chainID, txHash, chain.accountInfo.address)
 	s.Require().NoError(err)
 	s.T().Log(stdOut.String())
-	s.Require().Equal(0, exitCode, stdErr.String())
-	var txRes sdk.TxResponse
-	err = tmjson.Unmarshal(stdOut.Bytes(), &txRes)
-	s.Require().NoError(err)
-	s.Require().Equal(uint32(0), txRes.Code)
-	txHash := txRes.TxHash
-	err = s.store.CreateTicket(chain.chainID, txHash, chain.accountInfo.address)
-	s.Require().NoError(err)
 	// Wait for rpcwatcher to catch tx
 	time.Sleep(5 * time.Second)
 	ticket, err := s.store.Get(store.GetKey(chain.chainID, txHash))
@@ -139,67 +128,91 @@ func (s *IntegrationTestSuite) TestIBCTransfer() {
 	amount := "110"
 
 	// test ibc transfer
-	var stdOut, stdErr bytes.Buffer
-	exitCode, err := chain1.resource.Exec(
+	stdOut := s.executeDockerCmd(
+		chain1,
 		[]string{chain1.binaryName, "tx", "ibc-transfer", "transfer", defaultPort, chain1.channels[chain2.chainID],
-			chain2.accountInfo.address, fmt.Sprintf("%s%s", amount, chain1.accountInfo.denom),
+			chain2.accountInfo.address, fmt.Sprintf("%s%s", amount, chain1.accountInfo.primaryDenom),
 			fmt.Sprintf("--from=%s", chain1.accountInfo.keyname), "--keyring-backend=test", "-y",
 			fmt.Sprintf("--chain-id=%s", chain1.chainID),
 			"--broadcast-mode=async",
 		},
-		dockertest.ExecOptions{
-			StdOut: &stdOut,
-			StdErr: &stdErr,
-		})
-	s.Require().NoError(err)
-	s.T().Log(stdOut.String())
-	s.Require().Equal(0, exitCode, stdErr.String())
-	var txRes sdk.TxResponse
-	err = tmjson.Unmarshal(stdOut.Bytes(), &txRes)
-	s.Require().NoError(err)
-	s.Require().Equal(uint32(0), txRes.Code)
+	)
+	txRes := s.UnmarshalTx(stdOut.Bytes())
 	txHash := txRes.TxHash
-	err = s.store.CreateTicket(chain1.chainID, txHash, chain1.accountInfo.address)
+	err := s.store.CreateTicket(chain1.chainID, txHash, chain1.accountInfo.address)
 	s.Require().NoError(err)
+
 	// Wait for rpcwatcher to catch tx
 	time.Sleep(5 * time.Second)
 	key := store.GetKey(chain1.chainID, txHash)
 	ticket, err := s.store.Get(key)
 	s.Require().NoError(err)
 	s.Require().Equal("transit", ticket.Status)
-	stdOut = bytes.Buffer{}
-	stdErr = bytes.Buffer{}
-	// Wait for relayer to relay tx
-	time.Sleep(90 * time.Second)
 
+	// Wait for relayer to relay tx
+	time.Sleep(60 * time.Second)
+
+	ticket, err = s.store.Get(key)
+	s.Require().NoError(err)
+	s.T().Log("Ticket...", ticket)
 	// test ibc recv packet
-	stdOut = bytes.Buffer{}
-	stdErr = bytes.Buffer{}
-	exitCode, err = chain2.resource.Exec(
+	stdOut = s.executeDockerCmd(
+		chain2,
 		[]string{chain2.binaryName, "q", "txs", "--events", fmt.Sprintf("'message.action=recv_packet&fungible_token_packet.amount=%s'", amount)},
-		dockertest.ExecOptions{
-			StdOut: &stdOut,
-			StdErr: &stdErr,
-		})
-	s.Require().NoError(err)
-	s.T().Log(stdOut.String())
-	s.Require().Equal(0, exitCode, stdErr.String())
-	var res sdk.SearchTxsResult
-	err = tmjson.Unmarshal(stdOut.Bytes(), &res)
-	s.Require().NoError(err)
-	s.Require().Len(res.Txs, 1)
+	)
+	res := s.UnmarshalSearchTxs(stdOut.Bytes())
 	packetSeq := getPacketSequence(*res.Txs[0])
 	s.Require().NotEmpty(packetSeq)
 	ticket, err = s.store.Get(key)
 	s.Require().NoError(err)
-	s.T().Log("Ticket...", ticket)
-	// s.Require().True(false)
+	s.Require().True(checkTxHashEntry(ticket, store.TxHashEntry{
+		Chain:  chain2.chainID,
+		Status: "IBC_receive_success",
+		TxHash: res.Txs[0].TxHash,
+	}))
+
+	// test ibc ack packet
+	stdOut = s.executeDockerCmd(
+		chain1,
+		[]string{chain1.binaryName, "q", "txs", "--events", fmt.Sprintf("'message.action=acknowledge_packet&acknowledge_packet.packet_sequence=%s'", packetSeq)},
+	)
+	ackRes := s.UnmarshalSearchTxs(stdOut.Bytes())
+	// check acknowledgement error found
+	ackErr := checkFungibleTokenErr(*ackRes.Txs[0])
+	if ackErr {
+		ticket, err = s.store.Get(key)
+		s.Require().NoError(err)
+		s.Require().True(checkTxHashEntry(ticket, store.TxHashEntry{
+			Chain:  chain1.chainID,
+			Status: "Tokens_unlocked_ack",
+			TxHash: res.Txs[0].TxHash,
+		}))
+	}
 }
 
-// func (s *IntegrationTestSuite) TestDummy() {
-// 	// time.Sleep(1 * time.Minute)
-// 	s.Require().True(false)
-// }
+func (s *IntegrationTestSuite) TestLiquidityPool() {
+	chain1 := s.chains[0]
+	// chain2 := s.chains[1]
+
+	// test create-pool
+	stdOut := s.executeDockerCmd(
+		chain1,
+		[]string{chain1.binaryName, "tx", "liquidity", "create-pool", "1",
+			fmt.Sprintf("1000000%s,1000000%s", chain1.accountInfo.primaryDenom, "samoleans"),
+			fmt.Sprintf("--from=%s", chain1.accountInfo.keyname), "--keyring-backend=test", "-y",
+			fmt.Sprintf("--chain-id=%s", chain1.chainID),
+		},
+	)
+
+	time.Sleep(30 * time.Second)
+
+	txRes := s.UnmarshalTx(stdOut.Bytes())
+
+	out := s.executeDockerCmd(chain1, []string{chain1.binaryName, "q", "tx", txRes.TxHash})
+	s.T().Log("Out...", out.String())
+
+	// s.Require().True(false)
+}
 
 func (s *IntegrationTestSuite) TearDownSuite() {
 	s.T().Log("tearing down integration test suite")
@@ -208,4 +221,37 @@ func (s *IntegrationTestSuite) TearDownSuite() {
 
 func TestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IntegrationTestSuite))
+}
+
+func (s *IntegrationTestSuite) executeDockerCmd(chain testChain, command []string) bytes.Buffer {
+	var stdOut, stdErr bytes.Buffer
+	exitCode, err := chain.resource.Exec(
+		command,
+		dockertest.ExecOptions{
+			StdOut: &stdOut,
+			StdErr: &stdErr,
+		})
+	s.Require().NoError(err)
+	s.T().Log(stdOut.String())
+	s.Require().Equal(0, exitCode, stdErr.String())
+	return stdOut
+}
+
+func (s *IntegrationTestSuite) UnmarshalTx(out []byte) sdk.TxResponse {
+	s.T().Log("Input:", string(out))
+	var res sdk.TxResponse
+	err := tmjson.Unmarshal(out, &res)
+	s.Require().NoError(err)
+	s.T().Logf("Res: %+v", res)
+	s.T().Log("Code...", res.Code)
+	s.Require().Equal(uint32(0), res.Code)
+	return res
+}
+
+func (s *IntegrationTestSuite) UnmarshalSearchTxs(out []byte) sdk.SearchTxsResult {
+	var res sdk.SearchTxsResult
+	err := tmjson.Unmarshal(out, &res)
+	s.Require().NoError(err)
+	s.Require().Len(res.Txs, 1)
+	return res
 }

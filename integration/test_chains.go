@@ -7,6 +7,7 @@ import (
 type testChain struct {
 	chainID     string
 	accountInfo accountInfo
+	denoms      []denomInfo
 	dockerfile  string
 	binaryName  string
 	rpcPort     string
@@ -21,6 +22,10 @@ type accountInfo struct {
 	seed         string
 	address      string
 	prefix       string
+	primaryDenom string
+}
+
+type denomInfo struct {
 	denom        string
 	displayDenom string
 }
@@ -42,12 +47,21 @@ var (
 			seed:         SEED1,
 			address:      "cosmos1gclfxn8qyeytlupzjgzm6cmaxsdp7nlnzesjxa",
 			prefix:       "cosmos",
-			denom:        "uatom",
-			displayDenom: "ATOM",
+			primaryDenom: "uatom",
 		},
 		binaryName:  "gaiad",
 		dockerfile:  "integration/setup/Dockerfile.gaiatest",
 		testAddress: "cosmos12tkgplyat382h8eznp0ams3uz2gsukz7a9h76s",
+		denoms: []denomInfo{
+			denomInfo{
+				denom:        "uatom",
+				displayDenom: "ATOM",
+			},
+			denomInfo{
+				denom:        "samaoleans",
+				displayDenom: "LEANS",
+			},
+		},
 	}
 
 	akashTestChain = testChain{
@@ -57,11 +71,20 @@ var (
 			seed:         SEED1,
 			address:      "akash1gclfxn8qyeytlupzjgzm6cmaxsdp7nln0za4l8",
 			prefix:       "akash",
-			denom:        "uakt",
-			displayDenom: "AKT",
+			primaryDenom: "uakt",
 		},
 		binaryName:  "akash",
 		dockerfile:  "integration/setup/Dockerfile.akashtest",
 		testAddress: "akash12tkgplyat382h8eznp0ams3uz2gsukz7s76er2",
+		denoms: []denomInfo{
+			denomInfo{
+				denom:        "uakt",
+				displayDenom: "uatom",
+			},
+			denomInfo{
+				denom:        "samaoleans",
+				displayDenom: "LEANS",
+			},
+		},
 	}
 )

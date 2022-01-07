@@ -104,7 +104,7 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 		Cmd: []string{
 			tc.chainID,
 			tc.accountInfo.seed,
-			tc.accountInfo.denom,
+			tc.accountInfo.primaryDenom,
 		},
 	}
 

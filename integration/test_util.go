@@ -2,8 +2,10 @@ package integration
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
+	"github.com/allinbits/emeris-utils/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -17,10 +19,17 @@ func getInsertQueryValue(index string, chain testChain) string {
 		}
 		i++
 	}
-	value = value + `}',
-	'[
-		{"display_name":"` + chain.accountInfo.displayDenom + `","name":"` + chain.accountInfo.denom + `","verified":true,"fetch_price":true,"fee_token":true,"fee_levels":{"low":1,"average":22,"high":42},"precision":6}
-	]', 
+	value += `}',
+	'[`
+
+	for index, v := range chain.denoms {
+		value = value + `{"display_name":"` + v.displayDenom + `","name":"` + v.denom + `","verified":true,"fetch_price":true,"fee_token":true,"fee_levels":{"low":1,"average":22,"high":42},"precision":6}`
+		if index != len(chain.denoms)-1 {
+			value += `,`
+		}
+	}
+
+	value += `]', 
 	ARRAY['feeaddress'], 'genesis_hash', 
 	'{"endpoint":"http://localhost:` + chain.rpcPort + `","chain_id":"` + chain.chainID + `","bech32_config":{"main_prefix":"main_prefix","prefix_account":"` + chain.accountInfo.prefix + `","prefix_validator":"prefix_validator",
 	"prefix_consensus":"prefix_consensus","prefix_public":"prefix_public","prefix_operator":"prefix_operator"}}', 
@@ -62,4 +71,29 @@ func getPacketSequence(tx sdk.TxResponse) string {
 	}
 
 	return ""
+}
+
+func checkTxHashEntry(ticket store.Ticket, txHashEntry store.TxHashEntry) bool {
+	for _, entry := range ticket.TxHashes {
+		if reflect.DeepEqual(entry, txHashEntry) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkFungibleTokenErr(tx sdk.TxResponse) bool {
+	for _, log := range tx.Logs {
+		for _, event := range log.Events {
+			if event.Type == "fungible_token_packet" {
+				for _, attribute := range event.Attributes {
+					if attribute.Key == "error" {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }

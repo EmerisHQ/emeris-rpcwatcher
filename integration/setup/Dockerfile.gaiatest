@@ -1,12 +1,30 @@
-FROM tendermint/gaia:v4.2.1
+FROM golang:1.17-alpine as BUILD
 
 # Set up dependencies
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
 
-USER root
+WORKDIR /gaiad
 
-# Install minimum necessary dependencies, build Cosmos SDK, remove packages
-RUN apk add --no-cache $PACKAGES 
+RUN apk update && \
+    apk --no-cache add $PACKAGES
+
+RUN git clone https://github.com/cosmos/gaia.git
+
+WORKDIR /gaiad/gaia
+
+RUN git checkout v5.0.4 && make install
+
+FROM alpine:latest
+
+ENV GAIADIR /gaiad/gaia
+
+# Define working directory
+WORKDIR $GAIADIR
+
+# Copy binary from BUILD
+COPY --from=BUILD /go/bin/gaiad /usr/bin/gaiad
+
+USER root
 
 COPY integration/setup/gaia-setup.sh .
 

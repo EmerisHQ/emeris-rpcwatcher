@@ -17,7 +17,7 @@ SEEDS=$2
 DENOM=$3
 
 # Build genesis file incl account for passed address
-coins="10000000000$DENOM,100000000000samoleans"
+coins="100000000000$DENOM,100000000000samoleans"
 akash init --chain-id $CHAINID $CHAINID
 echo "$SEEDS" | akash keys add validator --keyring-backend="test" --recover
 akash add-genesis-account $(akash keys show validator -a --keyring-backend="test") $coins
