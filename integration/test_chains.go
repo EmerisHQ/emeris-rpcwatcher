@@ -53,12 +53,12 @@ var (
 		dockerfile:  "integration/setup/Dockerfile.gaiatest",
 		testAddress: "cosmos12tkgplyat382h8eznp0ams3uz2gsukz7a9h76s",
 		denoms: []denomInfo{
-			denomInfo{
+			{
 				denom:        "uatom",
 				displayDenom: "ATOM",
 			},
-			denomInfo{
-				denom:        "samaoleans",
+			{
+				denom:        "samoleans",
 				displayDenom: "LEANS",
 			},
 		},
@@ -77,11 +77,11 @@ var (
 		dockerfile:  "integration/setup/Dockerfile.akashtest",
 		testAddress: "akash12tkgplyat382h8eznp0ams3uz2gsukz7s76er2",
 		denoms: []denomInfo{
-			denomInfo{
+			{
 				denom:        "uakt",
 				displayDenom: "uatom",
 			},
-			denomInfo{
+			{
 				denom:        "samaoleans",
 				displayDenom: "LEANS",
 			},

@@ -57,22 +57,6 @@ func getMigrations(chains []testChain) []string {
 	return migrations
 }
 
-func getPacketSequence(tx sdk.TxResponse) string {
-	for _, log := range tx.Logs {
-		for _, event := range log.Events {
-			if event.Type == "send_packet" || event.Type == "recv_packet" {
-				for _, attribute := range event.Attributes {
-					if attribute.Key == "packet_sequence" {
-						return attribute.Value
-					}
-				}
-			}
-		}
-	}
-
-	return ""
-}
-
 func checkTxHashEntry(ticket store.Ticket, txHashEntry store.TxHashEntry) bool {
 	for _, entry := range ticket.TxHashes {
 		if reflect.DeepEqual(entry, txHashEntry) {
@@ -82,18 +66,18 @@ func checkTxHashEntry(ticket store.Ticket, txHashEntry store.TxHashEntry) bool {
 	return false
 }
 
-func checkFungibleTokenErr(tx sdk.TxResponse) bool {
+func getEventValueFromTx(tx sdk.TxResponse, eventType, attributeKey string) string {
 	for _, log := range tx.Logs {
 		for _, event := range log.Events {
-			if event.Type == "fungible_token_packet" {
+			if event.Type == eventType {
 				for _, attribute := range event.Attributes {
-					if attribute.Key == "error" {
-						return true
+					if attribute.Key == attributeKey {
+						return attribute.Value
 					}
 				}
 			}
 		}
 	}
 
-	return false
+	return ""
 }
