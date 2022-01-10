@@ -36,6 +36,13 @@ func (i *Instance) UpdateDenoms(chain cnsmodels.Chain) error {
 		return err
 	}
 
+	defer func() {
+		err := n.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	res, err := n.Exec(chain)
 
 	if err != nil {
@@ -46,11 +53,6 @@ func (i *Instance) UpdateDenoms(chain cnsmodels.Chain) error {
 
 	if rows == 0 {
 		return fmt.Errorf("database update statement had no effect")
-	}
-
-	err = n.Close()
-	if err != nil {
-		return nil
 	}
 
 	return nil
@@ -78,6 +80,13 @@ func (i *Instance) GetCounterParty(chain, srcChannel string) ([]cnsmodels.Channe
 		return []cnsmodels.ChannelQuery{}, err
 	}
 
+	defer func() {
+		err := q.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	if err := q.Select(&c, map[string]interface{}{
 		"chain_name": chain,
 		"channel":    srcChannel,
@@ -87,11 +96,6 @@ func (i *Instance) GetCounterParty(chain, srcChannel string) ([]cnsmodels.Channe
 
 	if len(c) == 0 {
 		return nil, fmt.Errorf("no counterparty found for chain %s on channel %s", chain, srcChannel)
-	}
-
-	err = q.Close()
-	if err != nil {
-		return nil, nil
 	}
 
 	return c, nil
