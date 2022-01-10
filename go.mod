@@ -14,7 +14,7 @@ require (
 	github.com/allinbits/emeris-utils v0.0.0-20211214203740-3e2cdc43f1fb
 	github.com/cockroachdb/cockroach-go/v2 v2.2.5
 	github.com/cosmos/cosmos-sdk v0.42.8
-	github.com/go-playground/validator/v10 v10.9.0
+	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gravity-devs/liquidity v1.2.9
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/r3labs/diff v1.1.0
