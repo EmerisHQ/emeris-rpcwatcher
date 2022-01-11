@@ -11,12 +11,14 @@ import (
 
 	"github.com/r3labs/diff"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
 	"github.com/allinbits/emeris-utils/logging"
 	"github.com/allinbits/emeris-utils/store"
+	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 
 	_ "net/http/pprof"
 )
@@ -44,6 +46,8 @@ var (
 		},
 	}
 )
+
+const grpcPort = 9090
 
 type watcherInstance struct {
 	watcher *rpcwatcher.Watcher
@@ -167,6 +171,39 @@ func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, con
 
 	if chainName == "cosmos-hub" { // special case, needs to observe new blocks too
 		eventMappings = cosmosHubMappings
+
+		// caching node_info for cosmos-hub
+		grpcConn, err := grpc.Dial(
+			fmt.Sprintf("%s:%d", chainName, grpcPort),
+			grpc.WithInsecure(),
+		)
+		if err != nil {
+			l.Errorw("cannot create gRPC client", "error", err, "chain name", chainName, "address", fmt.Sprintf("%s:%d", chainName, grpcPort))
+		}
+
+		defer func() {
+			if err := grpcConn.Close(); err != nil {
+				l.Errorw("cannot close gRPC client", "error", err, "chain_name", chainName)
+			}
+		}()
+
+		nodeInfoQuery := tmservice.NewServiceClient(grpcConn)
+		nodeInfoRes, err := nodeInfoQuery.GetNodeInfo(context.Background(), &tmservice.GetNodeInfoRequest{})
+		if err != nil {
+			l.Errorw("cannot get node info", "error", err)
+		}
+
+		bz, err := s.Cdc.MarshalJSON(nodeInfoRes)
+		if err != nil {
+			l.Errorw("cannot marshal node info", "error", err)
+		}
+
+		// caching node info
+		err = s.SetWithExpiry("node_info", string(bz), 0)
+		if err != nil {
+			l.Errorw("cannot set node info", "error", err)
+		}
+
 	}
 
 	watcher, err := rpcwatcher.NewWatcher(endpoint(chainName), chainName, l, config.ApiURL, db, s, eventsToSubTo, eventMappings)
@@ -192,6 +229,7 @@ func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, con
 	}
 
 	l.Debugw("connected", "chainName", chainName)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	rpcwatcher.Start(watcher, ctx)
 

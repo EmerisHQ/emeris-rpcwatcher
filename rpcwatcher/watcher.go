@@ -474,7 +474,7 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 
 	bz, err = w.store.Cdc.MarshalJSON(paramsRes)
 	if err != nil {
-		w.l.Errorw("cannot unmarshal liquidity params", "error", err, "height", newHeight)
+		w.l.Errorw("cannot marshal liquidity params", "error", err, "height", newHeight)
 	}
 
 	// caching liquidity params
@@ -486,12 +486,12 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 	supplyQuery := banktypes.NewQueryClient(grpcConn)
 	supplyRes, err := supplyQuery.TotalSupply(context.Background(), &banktypes.QueryTotalSupplyRequest{})
 	if err != nil {
-		w.l.Errorw("cannot get liquidity pools in blocks", "error", err, "height", newHeight)
+		w.l.Errorw("cannot get total supply", "error", err, "height", newHeight)
 	}
 
 	bz, err = w.store.Cdc.MarshalJSON(supplyRes)
 	if err != nil {
-		w.l.Errorw("cannot unmarshal total supply", "error", err, "height", newHeight)
+		w.l.Errorw("cannot marshal total supply", "error", err, "height", newHeight)
 	}
 
 	// caching total supply
