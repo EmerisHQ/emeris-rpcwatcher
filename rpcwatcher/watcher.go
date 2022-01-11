@@ -16,7 +16,6 @@ import (
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
 	"github.com/allinbits/emeris-utils/store"
 
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	liquiditytypes "github.com/gravity-devs/liquidity/x/liquidity/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
@@ -492,23 +491,6 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 	err = w.store.SetWithExpiry("supply", string(bz), 0)
 	if err != nil {
 		w.l.Errorw("cannot set total supply", "error", err, "height", newHeight)
-	}
-
-	nodeInfoQuery := tmservice.NewServiceClient(grpcConn)
-	nodeInfoRes, err := nodeInfoQuery.GetNodeInfo(context.Background(), &tmservice.GetNodeInfoRequest{})
-	if err != nil {
-		w.l.Errorw("cannot get node info", "error", err, "height", newHeight)
-	}
-
-	bz, err = w.store.Cdc.MarshalJSON(nodeInfoRes)
-	if err != nil {
-		w.l.Errorw("cannot marshal node info", "error", err, "height", newHeight)
-	}
-
-	// caching node info
-	err = w.store.SetWithExpiry("node_info", string(bz), 0)
-	if err != nil {
-		w.l.Errorw("cannot set node info", "error", err, "height", newHeight)
 	}
 }
 
