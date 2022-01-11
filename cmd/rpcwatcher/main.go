@@ -205,6 +205,12 @@ func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, con
 		l.Errorw("cannot create gRPC client", "error", err, "chain name", chainName, "address", fmt.Sprintf("%s:%d", chainName, grpcPort))
 	}
 
+	defer func() {
+		if err := grpcConn.Close(); err != nil {
+			l.Errorw("cannot close gRPC client", "error", err, "chain_name", chainName)
+		}
+	}()
+
 	nodeInfoQuery := tmservice.NewServiceClient(grpcConn)
 	nodeInfoRes, err := nodeInfoQuery.GetNodeInfo(context.Background(), &tmservice.GetNodeInfoRequest{})
 	if err != nil {
