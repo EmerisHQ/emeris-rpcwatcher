@@ -39,6 +39,7 @@ issues:
       linters:
         - stylecheck
     - path: integration/*
+    # ignoring below linters in integration tests since used functions are shown as unused
       linters:
         - unused
         - deadcode
