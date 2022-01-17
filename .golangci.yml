@@ -38,6 +38,11 @@ issues:
     - text: "ST1003:"
       linters:
         - stylecheck
+    - path: integration/*
+      linters:
+        - unused
+        - deadcode
+        - varcheck
 
 linters-settings:
   dogsled:
