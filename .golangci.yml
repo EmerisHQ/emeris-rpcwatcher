@@ -38,12 +38,6 @@ issues:
     - text: "ST1003:"
       linters:
         - stylecheck
-    - path: integration/*
-    # ignoring below linters in integration tests since used functions are shown as unused
-      linters:
-        - unused
-        - deadcode
-        - varcheck
 
 linters-settings:
   dogsled:
