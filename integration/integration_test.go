@@ -115,7 +115,6 @@ func (s *IntegrationTestSuite) TestNonIBCTransfer() {
 	txHash := txRes.TxHash
 	err := s.store.CreateTicket(chain.chainID, txHash, chain.accountInfo.address)
 	s.Require().NoError(err)
-	s.T().Log(stdOut.String())
 	// Wait for rpcwatcher to catch tx
 	time.Sleep(5 * time.Second)
 	ticket, err := s.store.Get(store.GetKey(chain.chainID, txHash))
@@ -312,7 +311,6 @@ func (s *IntegrationTestSuite) executeDockerCmd(chain testChain, command []strin
 			StdErr: &stdErr,
 		})
 	s.Require().NoError(err)
-	s.T().Log(stdOut.String())
 	s.Require().Equal(0, exitCode, stdErr.String())
 	return stdOut
 }
