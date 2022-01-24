@@ -17,7 +17,7 @@ SEEDS=$2
 DENOM=$3
 
 # Build genesis file incl account for passed address
-coins="100000000000$DENOM,100000000000samoleans"
+coins="100000000000$DENOM,100000000000samoleans,100000000000samoleans2"
 gaiad init --chain-id $CHAINID $CHAINID
 echo "$SEEDS" | gaiad keys add validator --keyring-backend="test" --recover
 gaiad add-genesis-account $(gaiad keys show validator -a --keyring-backend="test") $coins
@@ -33,4 +33,4 @@ sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' ~/.gaia/config/config
 sed -i 's/index_all_keys = false/index_all_keys = true/g' ~/.gaia/config/config.toml
 
 # Start the gaia
-gaiad start --pruning=nothing
+gaiad start --pruning=nothing --grpc.enable

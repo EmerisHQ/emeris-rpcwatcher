@@ -32,4 +32,4 @@ sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' ~/.akash/config/confi
 sed -i 's/index_all_keys = false/index_all_keys = true/g' ~/.akash/config/config.toml
 
 # Start the akash
-akash start --pruning=nothing
+akash start --pruning=nothing --grpc.enable

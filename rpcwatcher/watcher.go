@@ -30,7 +30,6 @@ const nonZeroCodeErrFmt = "non-zero code on chain %s: %s"
 const (
 	EventsTx                = "tm.event='Tx'"
 	EventsBlock             = "tm.event='NewBlock'"
-	grpcPort                = 9090
 	defaultWSClientReadWait = 30 * time.Second
 	defaultWatchdogTimeout  = 20 * time.Second
 	defaultReconnectionTime = 15 * time.Second
@@ -100,6 +99,7 @@ type Watcher struct {
 	store             *store.Store
 	runContext        context.Context
 	endpoint          string
+	grpcEndpoint      string
 	subs              []string
 	stopReadChannel   chan struct{}
 	stopErrorChannel  chan struct{}
@@ -109,7 +109,7 @@ type Watcher struct {
 func NewWatcher(
 	endpoint, chainName string,
 	logger *zap.SugaredLogger,
-	apiUrl string,
+	apiUrl, grpcEndpoint string,
 	db *database.Instance,
 	s *store.Store,
 	subscriptions []string,
@@ -155,6 +155,7 @@ func NewWatcher(
 		store:             s,
 		Name:              chainName,
 		endpoint:          endpoint,
+		grpcEndpoint:      grpcEndpoint,
 		subs:              subscriptions,
 		eventTypeMappings: eventTypeMappings,
 		stopReadChannel:   make(chan struct{}),
@@ -265,7 +266,7 @@ func resubscribe(w *Watcher) {
 		count++
 		w.l.Debugw("this is count", "count", count)
 
-		ww, err := NewWatcher(w.endpoint, w.Name, w.l, w.apiUrl, w.d, w.store, w.subs, w.eventTypeMappings)
+		ww, err := NewWatcher(w.endpoint, w.Name, w.l, w.apiUrl, w.grpcEndpoint, w.d, w.store, w.subs, w.eventTypeMappings)
 		if err != nil {
 			w.l.Errorw("cannot resubscribe to chain", "name", w.Name, "endpoint", w.endpoint, "error", err)
 			continue
@@ -458,11 +459,11 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 
 	// creating a grpc ClientConn to perform RPCs
 	grpcConn, err := grpc.Dial(
-		fmt.Sprintf("%s:%d", w.Name, grpcPort),
+		w.grpcEndpoint,
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		w.l.Errorw("cannot create gRPC client", "error", err, "chain_name", w.Name, "address", fmt.Sprintf("%s:%d", w.Name, grpcPort))
+		w.l.Errorw("cannot create gRPC client", "error", err, "chain_name", w.Name, "address", w.grpcEndpoint)
 		return
 	}
 

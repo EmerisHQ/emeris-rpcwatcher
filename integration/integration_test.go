@@ -20,10 +20,14 @@ import (
 	"github.com/avast/retry-go"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/rest"
 	relayerCmd "github.com/cosmos/relayer/cmd"
+	liquiditytypes "github.com/gravity-devs/liquidity/x/liquidity/types"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 	tmjson "github.com/tendermint/tendermint/libs/json"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 )
 
@@ -90,8 +94,8 @@ func (s *IntegrationTestSuite) SetupSuite() {
 		if chain.chainID == "cosmos-hub" { // special case, needs to observe new blocks too
 			eventMappings = rpcwatcher.CosmosHubMappings
 		}
-		watcher, err := rpcwatcher.NewWatcher(fmt.Sprintf("http://localhost:%s", chain.rpcPort), chain.chainID, logger, "", s.dbInstance,
-			s.store, rpcwatcher.EventsToSubTo, eventMappings)
+		watcher, err := rpcwatcher.NewWatcher(fmt.Sprintf("http://localhost:%s", chain.rpcPort), chain.chainID, logger, "",
+			fmt.Sprintf("localhost:%s", chain.grpcPort), s.dbInstance, s.store, rpcwatcher.EventsToSubTo, eventMappings)
 		s.Require().NoError(err)
 
 		err = s.store.SetWithExpiry(chain.chainID, "true", 0)
@@ -152,7 +156,7 @@ func (s *IntegrationTestSuite) TestIBCTransfer() {
 	s.Require().Equal("transit", ticket.Status)
 
 	// Wait for relayer to relay tx
-	time.Sleep(60 * time.Second)
+	time.Sleep(100 * time.Second)
 
 	// test ibc recv packet
 	stdOut = s.executeDockerCmd(
@@ -187,54 +191,6 @@ func (s *IntegrationTestSuite) TestIBCTransfer() {
 			TxHash: res.Txs[0].TxHash,
 		}))
 	}
-}
-
-func (s *IntegrationTestSuite) TestLiquidityPoolTxs() {
-	chain := s.chains[0]
-
-	// test create-pool
-	stdOut := s.executeDockerCmd(
-		chain,
-		[]string{chain.binaryName, "tx", "liquidity", "create-pool", "1",
-			fmt.Sprintf("1000000%s,1000000%s", chain.accountInfo.primaryDenom, "samoleans"),
-			fmt.Sprintf("--from=%s", chain.accountInfo.keyname), "--keyring-backend=test", "-y",
-			fmt.Sprintf("--chain-id=%s", chain.chainID),
-		},
-	)
-	txRes := s.UnmarshalTx(stdOut.Bytes())
-	txHash := txRes.TxHash
-	err := s.store.CreateTicket(chain.chainID, txHash, chain.accountInfo.address)
-	s.Require().NoError(err)
-
-	time.Sleep(30 * time.Second)
-
-	out := s.executeDockerCmd(chain, []string{chain.binaryName, "q", "tx", txHash})
-	txRes = s.UnmarshalTx(out.Bytes())
-	s.checkDenomExists(chain.chainID, getEventValueFromTx(txRes, "create_pool", "pool_coin_denom"), true)
-	ticket, err := s.store.Get(store.GetKey(chain.chainID, txHash))
-	s.Require().NoError(err)
-	s.Require().Equal("complete", ticket.Status)
-
-	poolID := getEventValueFromTx(txRes, "create_pool", "pool_id")
-
-	// test swap transaction
-	stdOut = s.executeDockerCmd(
-		chain,
-		[]string{chain.binaryName, "tx", "liquidity", "swap", poolID, "1",
-			fmt.Sprintf("10000%s", "samoleans"), chain.accountInfo.primaryDenom, "0.019", "0.003",
-			fmt.Sprintf("--from=%s", chain.accountInfo.keyname), "--keyring-backend=test", "-y",
-			fmt.Sprintf("--chain-id=%s", chain.chainID), "--broadcast-mode=async",
-		},
-	)
-	txRes = s.UnmarshalTx(stdOut.Bytes())
-	txHash = txRes.TxHash
-	err = s.store.CreateTicket(chain.chainID, txHash, chain.accountInfo.address)
-	s.Require().NoError(err)
-
-	time.Sleep(15 * time.Second)
-	ticket, err = s.store.Get(store.GetKey(chain.chainID, txHash))
-	s.Require().NoError(err)
-	s.Require().Equal("complete", ticket.Status)
 }
 
 func (s *IntegrationTestSuite) TestIBCTimeoutTransfer() {
@@ -292,6 +248,155 @@ func (s *IntegrationTestSuite) TestIBCTimeoutTransfer() {
 	}))
 }
 
+func (s *IntegrationTestSuite) TestLiquidityPoolTxs() {
+	chain := s.chains[0]
+	s.Require().GreaterOrEqual(len(chain.denoms), 2)
+
+	poolAmount := 1000000
+	// test create-pool
+	stdOut := s.executeDockerCmd(
+		chain,
+		[]string{chain.binaryName, "tx", "liquidity", "create-pool", "1",
+			fmt.Sprintf("%d%s,%d%s", poolAmount, chain.accountInfo.primaryDenom, poolAmount, chain.denoms[1].denom),
+			fmt.Sprintf("--from=%s", chain.accountInfo.keyname), "--keyring-backend=test", "-y",
+			fmt.Sprintf("--chain-id=%s", chain.chainID),
+		},
+	)
+	txRes := s.UnmarshalTx(stdOut.Bytes())
+	txHash := txRes.TxHash
+	err := s.store.CreateTicket(chain.chainID, txHash, chain.accountInfo.address)
+	s.Require().NoError(err)
+
+	time.Sleep(30 * time.Second)
+
+	out := s.executeDockerCmd(chain, []string{chain.binaryName, "q", "tx", txHash})
+	txRes = s.UnmarshalTx(out.Bytes())
+	poolDenom := getEventValueFromTx(txRes, "create_pool", "pool_coin_denom")
+	s.checkDenomExists(chain.chainID, poolDenom, true)
+	ticket, err := s.store.Get(store.GetKey(chain.chainID, txHash))
+	s.Require().NoError(err)
+	s.Require().Equal("complete", ticket.Status)
+
+	// check cache supply updated with new pool denom
+	supply, err := s.store.GetSupply()
+	s.Require().NoError(err)
+	expCoin := sdk.NewCoin(poolDenom, sdk.NewInt(int64(poolAmount)))
+	found := false
+	for _, coin := range supply.Supply {
+		if coin.Equal(expCoin) {
+			found = true
+		}
+	}
+	s.Require().True(found, "cache supply not updated with new pool denom")
+
+	// check cache pools updated with new pool
+	pools, err := s.store.GetPools()
+	s.Require().NoError(err)
+
+	found = false
+	for _, pool := range pools.Pools {
+		if pool.PoolCoinDenom == poolDenom {
+			found = true
+		}
+	}
+	s.Require().True(found, "cache pools not updated with new pool")
+
+	// test swap transaction
+	poolID := getEventValueFromTx(txRes, "create_pool", "pool_id")
+	stdOut = s.executeDockerCmd(
+		chain,
+		[]string{chain.binaryName, "tx", "liquidity", "swap", poolID, "1",
+			fmt.Sprintf("10000%s", chain.denoms[1].denom), chain.accountInfo.primaryDenom, "0.019", "0.003",
+			fmt.Sprintf("--from=%s", chain.accountInfo.keyname), "--keyring-backend=test", "-y",
+			fmt.Sprintf("--chain-id=%s", chain.chainID), "--broadcast-mode=async",
+		},
+	)
+	txRes = s.UnmarshalTx(stdOut.Bytes())
+	txHash = txRes.TxHash
+	err = s.store.CreateTicket(chain.chainID, txHash, chain.accountInfo.address)
+	s.Require().NoError(err)
+
+	time.Sleep(15 * time.Second)
+	ticket, err = s.store.Get(store.GetKey(chain.chainID, txHash))
+	s.Require().NoError(err)
+	s.Require().Equal("complete", ticket.Status)
+}
+
+func (s *IntegrationTestSuite) TestHandleCosmosHubBlock() {
+	chain := s.chains[0]
+	s.Require().GreaterOrEqual(len(chain.denoms), 3)
+
+	time.Sleep(15 * time.Second)
+
+	stdOut := s.executeDockerCmd(
+		chain,
+		[]string{chain.binaryName, "q", "block"},
+	)
+
+	var block coretypes.ResultBlock
+	err := tmjson.Unmarshal(stdOut.Bytes(), &block)
+	s.Require().NoError(err)
+	height := block.Block.Height
+
+	expected, err := rest.GetRequest(fmt.Sprintf("http://localhost:%s/block_results?height=%d", chain.rpcPort, height))
+	s.Require().NoError(err)
+
+	// wait for rpc watcher to store block data
+	time.Sleep(10 * time.Second)
+
+	bs := store.NewBlocks(s.store)
+	storedBytes, err := bs.Block(height)
+	s.Require().NoError(err, height)
+	s.Require().Equal(string(expected), string(storedBytes))
+
+	// create new pool
+	stdOut = s.executeDockerCmd(
+		chain,
+		[]string{chain.binaryName, "tx", "liquidity", "create-pool", "1",
+			fmt.Sprintf("1000000%s,1000000%s", chain.accountInfo.primaryDenom, chain.denoms[2].denom),
+			fmt.Sprintf("--from=%s", chain.accountInfo.keyname), "--keyring-backend=test", "-y",
+			fmt.Sprintf("--chain-id=%s", chain.chainID),
+		},
+	)
+	txRes := s.UnmarshalTx(stdOut.Bytes())
+	txHash := txRes.TxHash
+
+	time.Sleep(15 * time.Second)
+
+	// check whether tx executed successfully
+	out := s.executeDockerCmd(chain, []string{chain.binaryName, "q", "tx", txHash})
+	_ = s.UnmarshalTx(out.Bytes())
+
+	grpcConn, err := grpc.Dial(
+		fmt.Sprintf("localhost:%s", chain.grpcPort),
+		grpc.WithInsecure(),
+	)
+	s.Require().NoError(err)
+	defer grpcConn.Close()
+
+	liquidityQuery := liquiditytypes.NewQueryClient(grpcConn)
+
+	// check pools are stored in cache
+	poolsRes, err := liquidityQuery.LiquidityPools(context.Background(), &liquiditytypes.QueryLiquidityPoolsRequest{})
+	s.Require().NoError(err)
+
+	time.Sleep(5 * time.Second)
+
+	cachePools, err := s.store.GetPools()
+	s.Require().NoError(err)
+	s.Require().Equal(poolsRes.String(), cachePools.String())
+
+	// check liquidity params are stored in cache
+	paramsRes, err := liquidityQuery.Params(context.Background(), &liquiditytypes.QueryParamsRequest{})
+	s.Require().NoError(err)
+
+	time.Sleep(5 * time.Second)
+
+	cacheParams, err := s.store.GetParams()
+	s.Require().NoError(err)
+	s.Require().Equal(paramsRes.String(), cacheParams.String())
+}
+
 func (s *IntegrationTestSuite) TearDownSuite() {
 	s.T().Log("tearing down integration test suite")
 	s.ts.Stop()
@@ -319,7 +424,7 @@ func (s *IntegrationTestSuite) UnmarshalTx(out []byte) sdk.TxResponse {
 	var res sdk.TxResponse
 	err := tmjson.Unmarshal(out, &res)
 	s.Require().NoError(err)
-	s.Require().Equal(uint32(0), res.Code)
+	s.Require().Equal(uint32(0), res.Code, string(out))
 	return res
 }
 

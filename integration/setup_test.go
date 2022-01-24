@@ -56,10 +56,16 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 		for _, r := range resources {
 			if strings.Contains(r.Container.Name, chains[i].chainID) {
 				chains[i].resource = r
-				ports := r.Container.NetworkSettings.Ports[dc.Port("26657/tcp")]
+				// set rpc port in chain config
+				ports := r.Container.NetworkSettings.Ports[dc.Port(fmt.Sprintf("%s/tcp", defaultRPCPort))]
 				require.Greater(t, len(ports), 0)
 				chains[i].rpcPort = ports[0].HostPort
-				t.Log(fmt.Sprintf("- [%s] CONTAINER AVAILABLE AT PORT %s", chains[i].chainID, chains[i].rpcPort))
+				// set grpc port in chain config
+				grpcPorts := r.Container.NetworkSettings.Ports[dc.Port(fmt.Sprintf("%s/tcp", defaultGRPCPort))]
+				require.Greater(t, len(grpcPorts), 0)
+				chains[i].grpcPort = grpcPorts[0].HostPort
+				t.Log(fmt.Sprintf("- [%s] CONTAINER AVAILABLE AT RPC PORT: %s AND GRPC PORT: %s",
+					chains[i].chainID, chains[i].rpcPort, chains[i].grpcPort))
 				break
 			}
 		}
@@ -100,7 +106,7 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 		Name:         containerName,
 		Repository:   containerName, // Name must match Repository
 		Tag:          "latest",      // Must match docker default build tag
-		ExposedPorts: []string{"26657"},
+		ExposedPorts: []string{defaultRPCPort, defaultGRPCPort},
 		Cmd: []string{
 			tc.chainID,
 			tc.accountInfo.seed,

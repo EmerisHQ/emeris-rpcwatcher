@@ -11,6 +11,7 @@ type testChain struct {
 	dockerfile  string
 	binaryName  string
 	rpcPort     string
+	grpcPort    string
 	resource    *dockertest.Resource
 	channels    map[string]string
 	// dummy second address to test txs
@@ -37,6 +38,9 @@ const (
 	// SEED2 is a mnemonic
 	//nolint:lll
 	SEED2 = "near little movie lady moon fuel abandon gasp click element muscle elbow taste indoor soft soccer like occur legend coin near random normal adapt"
+
+	defaultRPCPort  = "26657"
+	defaultGRPCPort = "9090"
 )
 
 var (
@@ -61,6 +65,10 @@ var (
 				denom:        "samoleans",
 				displayDenom: "LEANS",
 			},
+			{
+				denom:        "samoleans2",
+				displayDenom: "LEANS2",
+			},
 		},
 	}
 
@@ -82,7 +90,7 @@ var (
 				displayDenom: "uatom",
 			},
 			{
-				denom:        "samaoleans",
+				denom:        "samoleans",
 				displayDenom: "LEANS",
 			},
 		},
