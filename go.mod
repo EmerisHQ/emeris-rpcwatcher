@@ -11,13 +11,13 @@ replace (
 
 require (
 	github.com/alicebob/miniredis/v2 v2.16.0
-	github.com/allinbits/demeris-backend-models v0.0.0-20211202094520-07017cad0218
-	github.com/allinbits/emeris-utils v0.0.0-20211214203740-3e2cdc43f1fb
+	github.com/allinbits/demeris-backend-models v1.0.0
+	github.com/allinbits/emeris-utils v0.1.0
 	github.com/avast/retry-go v2.6.0+incompatible
 	github.com/cockroachdb/cockroach-go/v2 v2.2.5
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/cosmos/relayer v1.0.0-rc1.0.20210426142722-71e9d4d9142e
-	github.com/go-playground/validator/v10 v10.9.0
+	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gravity-devs/liquidity v1.2.9
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/ory/dockertest/v3 v3.6.2
@@ -63,11 +63,11 @@ require (
 	github.com/dustin/go-humanize v1.0.1-0.20200219035652-afde56e7acac // indirect
 	github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b // indirect
 	github.com/enigmampc/btcutil v1.0.3-0.20200723161021-e2fb6adb2a25 // indirect
-	github.com/ethereum/go-ethereum v1.10.12 // indirect
+	github.com/ethereum/go-ethereum v1.10.15 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.7.4 // indirect
+	github.com/gin-gonic/gin v1.7.7 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -107,7 +107,7 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/lib/pq v1.10.3 // indirect
+	github.com/lib/pq v1.10.4 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
 	github.com/magefile/mage v1.11.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
