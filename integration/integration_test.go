@@ -230,7 +230,7 @@ func (s *IntegrationTestSuite) TestIBCTimeoutTransfer() {
 	s.Require().NoError(err, stdOut.String())
 
 	// Wait for rpcwatcher to catch timeout tx
-	time.Sleep(30 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	// test ibc recv packet
 	stdOut = s.executeDockerCmd(
