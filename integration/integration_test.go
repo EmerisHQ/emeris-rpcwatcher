@@ -22,6 +22,7 @@ import (
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	relayerCmd "github.com/cosmos/relayer/cmd"
 	liquiditytypes "github.com/gravity-devs/liquidity/x/liquidity/types"
 	"github.com/ory/dockertest/v3"
@@ -279,8 +280,12 @@ func (s *IntegrationTestSuite) TestLiquidityPoolTxs() {
 	s.Require().Equal("complete", ticket.Status)
 
 	// check cache supply updated with new pool denom
-	supply, err := s.store.GetSupply()
+	bz, err := s.store.GetSupply()
 	s.Require().NoError(err)
+	var supply banktypes.QueryTotalSupplyResponse
+	err = tmjson.Unmarshal(bz, &supply)
+	s.Require().NoError(err)
+
 	expCoin := sdk.NewCoin(poolDenom, sdk.NewInt(int64(poolAmount)))
 	found := false
 	for _, coin := range supply.Supply {
@@ -291,7 +296,11 @@ func (s *IntegrationTestSuite) TestLiquidityPoolTxs() {
 	s.Require().True(found, "cache supply not updated with new pool denom")
 
 	// check cache pools updated with new pool
-	pools, err := s.store.GetPools()
+	bz, err = s.store.GetPools()
+	s.Require().NoError(err)
+
+	var pools liquiditytypes.QueryLiquidityPoolsResponse
+	err = tmjson.Unmarshal(bz, &pools)
 	s.Require().NoError(err)
 
 	found = false
@@ -380,22 +389,26 @@ func (s *IntegrationTestSuite) TestHandleCosmosHubBlock() {
 	// check pools are stored in cache
 	poolsRes, err := liquidityQuery.LiquidityPools(context.Background(), &liquiditytypes.QueryLiquidityPoolsRequest{})
 	s.Require().NoError(err)
+	expected, err = s.store.Cdc.MarshalJSON(poolsRes)
+	s.Require().NoError(err)
 
 	time.Sleep(5 * time.Second)
 
 	cachePools, err := s.store.GetPools()
 	s.Require().NoError(err)
-	s.Require().Equal(poolsRes.String(), cachePools.String())
+	s.Require().Equal(string(expected), string(cachePools))
 
 	// check liquidity params are stored in cache
 	paramsRes, err := liquidityQuery.Params(context.Background(), &liquiditytypes.QueryParamsRequest{})
+	s.Require().NoError(err)
+	expected, err = s.store.Cdc.MarshalJSON(paramsRes)
 	s.Require().NoError(err)
 
 	time.Sleep(5 * time.Second)
 
 	cacheParams, err := s.store.GetParams()
 	s.Require().NoError(err)
-	s.Require().Equal(paramsRes.String(), cacheParams.String())
+	s.Require().Equal(string(expected), string(cacheParams))
 }
 
 func (s *IntegrationTestSuite) TearDownSuite() {
