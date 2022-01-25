@@ -15,7 +15,7 @@ test:
 	go test -v -race ./... -cover
 
 integration-test:
-	go test -v -tags norace ${BASEPKG}/integration
+	go test -v ${BASEPKG}/integration
 
 lint:
 	golangci-lint run ./...

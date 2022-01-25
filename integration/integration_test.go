@@ -1,6 +1,7 @@
-//go:build norace
-// +build norace
+//go:build !race
+// +build !race
 
+// TODO: fix race conditions and avoid !race
 package integration
 
 import (
@@ -38,10 +39,6 @@ const (
 )
 
 var testchains = []testChain{gaiaTestChain, akashTestChain}
-
-// To run single test, please run command:
-// go test -timeout 600s -tags norace -v <package> -run <testsuite> -testify.m <TestMethodName>
-// Ex: go test -timeout 600s -tags norace -v github.com/allinbits/emeris-rpcwatcher/integration -run TestIntegrationTestSuite -testify.m TestLiquidityPoolTxs
 
 type IntegrationTestSuite struct {
 	suite.Suite
