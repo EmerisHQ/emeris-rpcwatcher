@@ -501,10 +501,26 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 	}
 }
 
-func HandleNewBlock(w *Watcher, _ coretypes.ResultEvent) {
+func HandleNewBlock(w *Watcher, data coretypes.ResultEvent) {
 	w.watchdog.Ping()
 	w.l.Debugw("performed watchdog ping", "chain_name", w.Name)
 	w.l.Debugw("new block", "chain_name", w.Name)
+
+	realData, ok := data.Data.(types.EventDataNewBlock)
+	if !ok {
+		panic("rpc returned block data which is not of expected type")
+	}
+
+	if realData.Block == nil {
+		w.l.Warnw("weird block received on rpc, it was empty while it shouldn't", "chain_name", w.Name)
+	}
+
+	b := store.NewBlocks(w.store)
+
+	if err := b.SetLastBlockTime(realData.Block.Time, realData.Block.Height); err != nil {
+		w.l.Errorw("cannot write last block time to store", "chain_name", w.Name, "error", err)
+		return
+	}
 }
 
 func HandleCosmosHubLPCreated(w *Watcher, data coretypes.ResultEvent, chainName, key string, height int64) {
