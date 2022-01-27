@@ -61,8 +61,10 @@ func (s *IntegrationTestSuite) SetupSuite() {
 		s.chains[1].chainID, s.chains[1].accountInfo.primaryDenom, s.chains[1].accountInfo.prefix, s.chains[1].accountInfo.seed, s.chains[1].rpcPort,
 	)
 	s.Require().NotNil(cmd)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	err := cmd.Run()
-	s.Require().NoError(err)
+	s.Require().NoError(err, stderr.String())
 	data, err := ioutil.ReadFile(fmt.Sprintf("%s/%s/config/config.yaml", s.tempDir, defaultRlyDir))
 	s.Require().NoError(err)
 	var relayerCfg relayerCmd.Config
