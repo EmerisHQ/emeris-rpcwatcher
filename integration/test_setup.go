@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -18,7 +19,7 @@ import (
 // spinUpTestChains is to be passed any number of test chains with given configuration options
 // to be created as individual docker containers at the beginning of a test. It is safe to run
 // in parallel tests as all created resources are independent of eachother
-func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
+func spinUpTestChains(t *testing.T, pool *dockertest.Pool, network *dockertest.Network, testChains ...testChain) []testChain {
 	var (
 		resources []*dockertest.Resource
 		chains    = make([]testChain, len(testChains))
@@ -34,17 +35,17 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 	dir, err := ioutil.TempDir("", "integration-test")
 	require.NoError(t, err)
 
-	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
-	}
+	// // uses a sensible default on windows (tcp/http) and linux/osx (socket)
+	// pool, err := dockertest.NewPool("")
+	// if err != nil {
+	// 	require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
+	// }
 
 	// make each container and initialize the chains
 	for i, tc := range testChains {
 		chains[i] = tc
 		wg.Add(1)
-		go spinUpTestContainer(t, rchan, pool, dir, &wg, chains[i])
+		go spinUpTestContainer(t, rchan, pool, dir, &wg, chains[i], network)
 	}
 
 	// wait for all containers to be created
@@ -90,7 +91,7 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 // A docker image is built for each chain using its provided configuration.
 // This image is then ran using the options set below.
 func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *dockertest.Pool,
-	dir string, wg *sync.WaitGroup, tc testChain) {
+	dir string, wg *sync.WaitGroup, tc testChain, network *dockertest.Network) {
 	defer wg.Done()
 	var (
 		err error
@@ -110,6 +111,7 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 			tc.chainID,
 			tc.keyInfo.seed,
 		},
+		Networks: []*dockertest.Network{network},
 	}
 
 	require.NoError(t, removeTestContainer(pool, containerName))
@@ -198,23 +200,29 @@ func getLoggingChain(chns []testChain, rsr *dockertest.Resource) testChain {
 	return testChain{}
 }
 
-func spinRelayer(t *testing.T) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
-	}
+func spinRelayer(t *testing.T, pool *dockertest.Pool, rpcPort string, network *dockertest.Network) {
+	// pool, err := dockertest.NewPool("")
+	// if err != nil {
+	// 	require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
+	// }
 
-	hostNetwork, err := pool.Client.NetworkInfo("host")
-	require.NoError(t, err)
+	// networks, err := pool.Client.ListNetworks()
+	// require.NoError(t, err)
 
-	network := &dockertest.Network{Network: hostNetwork}
+	// t.Log("Networks...", networks)
+
+	// hostNetwork, err := pool.Client.NetworkInfo("default")
+	// require.NoError(t, err)
+
+	// network := &dockertest.Network{Network: hostNetwork}
+	url := fmt.Sprintf("http://%s:26657", rpcPort)
 
 	dockerOpts := &dockertest.RunOptions{
 		Name:       "relayer",
 		Repository: "relayer", // Name must match Repository
 		Tag:        "latest",  // Must match docker default build tag
 		Cmd: []string{
-			"49443",
+			url,
 		},
 		Networks: []*dockertest.Network{network},
 	}
@@ -231,6 +239,16 @@ func spinRelayer(t *testing.T) {
 	}
 	resource, err := pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
 	require.NoError(t, err)
+
+	var stdOut, stdErr bytes.Buffer
+	_, _ = resource.Exec(
+		[]string{"curl", url},
+		dockertest.ExecOptions{
+			StdOut: &stdOut,
+			StdErr: &stdErr,
+		})
+	// require.NoError(err)
+	t.Log("Stdout...", stdOut.String(), "StdErr..", stdErr.String())
 
 	t.Log(fmt.Sprintf("- [%s] SPUN UP IN CONTAINER %s from %s", "relayer",
 		resource.Container.Name, resource.Container.Config.Image))

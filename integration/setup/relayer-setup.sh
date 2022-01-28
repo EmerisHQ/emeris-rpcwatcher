@@ -13,4 +13,4 @@ rly cfg init
 
 rly cfg show
 
-curl "http://localhost:$PORT/status"
+curl $PORT/status

@@ -1,8 +1,10 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -15,9 +17,20 @@ type IntegrationTestSuite struct {
 }
 
 func (s *IntegrationTestSuite) SetupSuite() {
-	// s.chains = spinUpTestChains(s.T(), testchains...)
-	// s.Require().Len(s.chains, len(testchains))
-	spinRelayer(s.T())
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		s.Require().NoError(fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
+	}
+	network, err := pool.CreateNetwork("test-on-start")
+	s.Require().Nil(err)
+	defer network.Close()
+	s.chains = spinUpTestChains(s.T(), pool, network, testchains...)
+	s.Require().Len(s.chains, len(testchains))
+	s.T().Log("Network 1...", s.chains[0].resource.GetIPInNetwork(network))
+	s.T().Log("Network 2...", s.chains[1].resource.GetIPInNetwork(network))
+	// time.Sleep(10 * time.Minute)
+	spinRelayer(s.T(), pool, s.chains[0].resource.GetIPInNetwork(network), network)
+	// time.Sleep(15 * time.Second)
 }
 
 func (s *IntegrationTestSuite) TestDummy() {
