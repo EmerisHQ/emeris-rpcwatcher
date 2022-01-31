@@ -224,6 +224,9 @@ func spinRelayer(t *testing.T, pool *dockertest.Pool, network *dockertest.Networ
 	resource, err := pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
 	require.NoError(t, err)
 
+	// wait for relayer to start
+	time.Sleep(100 * time.Second)
+
 	t.Log(fmt.Sprintf("- [%s] SPUN UP IN CONTAINER %s from %s", "relayer",
 		resource.Container.Name, resource.Container.Config.Image))
 
