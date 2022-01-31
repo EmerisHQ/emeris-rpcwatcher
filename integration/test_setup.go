@@ -124,7 +124,10 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 		Dockerfile: tc.dockerfile,
 		ContextDir: path.Dir(d),
 	}
-	resource, err = pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
+	hcOpt := func(hc *dc.HostConfig) {
+		hc.LogConfig.Type = "json-file"
+	}
+	resource, err = pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts, hcOpt)
 	require.NoError(t, err)
 
 	// TODO: need workaround to check node logs whether blocks started creating
@@ -200,7 +203,7 @@ func getLoggingChain(chns []testChain, rsr *dockertest.Resource) testChain {
 	return testChain{}
 }
 
-func spinRelayer(t *testing.T, pool *dockertest.Pool, rpcPort string, network *dockertest.Network) {
+func spinRelayer(t *testing.T, pool *dockertest.Pool, network *dockertest.Network, args ...string) {
 	// pool, err := dockertest.NewPool("")
 	// if err != nil {
 	// 	require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
@@ -215,16 +218,13 @@ func spinRelayer(t *testing.T, pool *dockertest.Pool, rpcPort string, network *d
 	// require.NoError(t, err)
 
 	// network := &dockertest.Network{Network: hostNetwork}
-	url := fmt.Sprintf("http://%s:26657", rpcPort)
 
 	dockerOpts := &dockertest.RunOptions{
 		Name:       "relayer",
 		Repository: "relayer", // Name must match Repository
 		Tag:        "latest",  // Must match docker default build tag
-		Cmd: []string{
-			url,
-		},
-		Networks: []*dockertest.Network{network},
+		Cmd:        args,
+		Networks:   []*dockertest.Network{network},
 	}
 
 	require.NoError(t, removeTestContainer(pool, "relayer"))
@@ -242,7 +242,17 @@ func spinRelayer(t *testing.T, pool *dockertest.Pool, rpcPort string, network *d
 
 	var stdOut, stdErr bytes.Buffer
 	_, _ = resource.Exec(
-		[]string{"curl", url},
+		[]string{"curl", fmt.Sprintf("http://%s:26657", args[0])},
+		dockertest.ExecOptions{
+			StdOut: &stdOut,
+			StdErr: &stdErr,
+		})
+	// require.NoError(err)
+	t.Log("Stdout...", stdOut.String(), "StdErr..", stdErr.String())
+
+	stdOut, stdErr = bytes.Buffer{}, bytes.Buffer{}
+	_, _ = resource.Exec(
+		[]string{"curl", fmt.Sprintf("http://%s:26657", args[1])},
 		dockertest.ExecOptions{
 			StdOut: &stdOut,
 			StdErr: &stdErr,

@@ -7,10 +7,12 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-PORT=$1
+IP1=$1
+IP2=$2
 
 rly cfg init
 
 rly cfg show
 
-curl $PORT/status
+curl http://$IP1:26657/status
+curl http://$IP2:26657/status

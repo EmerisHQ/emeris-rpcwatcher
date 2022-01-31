@@ -29,7 +29,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.T().Log("Network 1...", s.chains[0].resource.GetIPInNetwork(network))
 	s.T().Log("Network 2...", s.chains[1].resource.GetIPInNetwork(network))
 	// time.Sleep(10 * time.Minute)
-	spinRelayer(s.T(), pool, s.chains[0].resource.GetIPInNetwork(network), network)
+	spinRelayer(s.T(), pool, network, s.chains[0].resource.GetIPInNetwork(network), s.chains[1].resource.GetIPInNetwork(network))
 	// time.Sleep(15 * time.Second)
 }
 
