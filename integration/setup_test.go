@@ -5,45 +5,43 @@ import (
 	"os"
 	"path"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	dockertest "github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 )
 
 // spinUpTestChains is to be passed any number of test chains with given configuration options
 // to be created as individual docker containers at the beginning of a test. It is safe to run
 // in parallel tests as all created resources are independent of eachother
-func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
+func spinUpTestChains(t *testing.T, pool *dockertest.Pool, network *dockertest.Network, testChains ...testChain) []testChain {
 	var (
 		resources = make([]*dockertest.Resource, 0, len(testChains))
 		chains    = make([]testChain, len(testChains))
 
-		wg    sync.WaitGroup
+		// wg    sync.WaitGroup
 		rchan = make(chan *dockertest.Resource, len(testChains))
 
 		testsDone = make(chan struct{})
 		contDone  = make(chan struct{})
 	)
 
-	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		require.NoError(t, fmt.Errorf("could not connect to docker at %s: %w", pool.Client.Endpoint(), err))
-	}
-
+	var eg errgroup.Group
 	// make each container and initialize the chains
 	for i, tc := range testChains {
+		tc := tc
 		chains[i] = tc
-		wg.Add(1)
-		go spinUpTestContainer(t, rchan, pool, &wg, chains[i])
+		// wg.Add(1)
+		eg.Go(func() error {
+			return spinUpTestContainer(t, rchan, pool, tc, network)
+		})
 	}
 
 	// wait for all containers to be created
-	wg.Wait()
+	require.NoError(t, eg.Wait())
 
 	// read all the containers out of the channel
 	for i := 0; i < len(chains); i++ {
@@ -56,16 +54,10 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 		for _, r := range resources {
 			if strings.Contains(r.Container.Name, chains[i].chainID) {
 				chains[i].resource = r
-				// set rpc port in chain config
-				ports := r.Container.NetworkSettings.Ports[dc.Port(fmt.Sprintf("%s/tcp", defaultRPCPort))]
-				require.Greater(t, len(ports), 0)
-				chains[i].rpcPort = ports[0].HostPort
-				// set grpc port in chain config
-				grpcPorts := r.Container.NetworkSettings.Ports[dc.Port(fmt.Sprintf("%s/tcp", defaultGRPCPort))]
-				require.Greater(t, len(grpcPorts), 0)
-				chains[i].grpcPort = grpcPorts[0].HostPort
-				t.Log(fmt.Sprintf("- [%s] CONTAINER AVAILABLE AT RPC PORT: %s AND GRPC PORT: %s",
-					chains[i].chainID, chains[i].rpcPort, chains[i].grpcPort))
+				// set node address in chain config
+				chains[i].nodeAddress = r.GetIPInNetwork(network)
+				t.Log(fmt.Sprintf("- [%s] CONTAINER AVAILABLE WITH IP: %s",
+					chains[i].chainID, chains[i].nodeAddress))
 				break
 			}
 		}
@@ -91,8 +83,7 @@ func spinUpTestChains(t *testing.T, testChains ...testChain) []testChain {
 // A docker image is built for each chain using its provided configuration.
 // This image is then ran using the options set below.
 func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *dockertest.Pool,
-	wg *sync.WaitGroup, tc testChain) {
-	defer wg.Done()
+	tc testChain, network *dockertest.Network) error {
 	var (
 		err error
 		// debug    bool
@@ -100,6 +91,8 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 	)
 
 	containerName := tc.chainID
+
+	t.Log(fmt.Sprintf("- SETTING UP CONTAINER for [%s]", tc.chainID))
 
 	// setup docker options
 	dockerOpts := &dockertest.RunOptions{
@@ -112,20 +105,27 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 			tc.accountInfo.seed,
 			tc.accountInfo.primaryDenom,
 		},
+		Networks: []*dockertest.Network{network},
 	}
 
-	require.NoError(t, removeTestContainer(pool, containerName))
+	if err := removeTestContainer(pool, containerName); err != nil {
+		return err
+	}
 
 	// create the proper docker image with port forwarding setup
 	d, err := os.Getwd()
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
 	buildOpts := &dockertest.BuildOptions{
 		Dockerfile: tc.dockerfile,
 		ContextDir: path.Dir(d),
 	}
 	resource, err = pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 
 	// TODO: need workaround to check node logs whether blocks started creating
 	time.Sleep(10 * time.Second)
@@ -134,6 +134,7 @@ func spinUpTestContainer(t *testing.T, rchan chan<- *dockertest.Resource, pool *
 		resource.Container.Name, resource.Container.Config.Image))
 
 	rchan <- resource
+	return nil
 }
 
 func removeTestContainer(pool *dockertest.Pool, containerName string) error {
@@ -193,4 +194,47 @@ func getLoggingChain(chns []testChain, rsr *dockertest.Resource) testChain {
 		}
 	}
 	return testChain{}
+}
+
+func spinRelayer(t *testing.T, pool *dockertest.Pool, network *dockertest.Network, args ...string) *dockertest.Resource {
+	var (
+		testsDone = make(chan struct{})
+		contDone  = make(chan struct{})
+	)
+
+	t.Log("- SETTING UP CONTAINER for [relayer]")
+	dockerOpts := &dockertest.RunOptions{
+		Name:       "relayer",
+		Repository: "relayer", // Name must match Repository
+		Tag:        "latest",  // Must match docker default build tag
+		Cmd:        args,
+		Networks:   []*dockertest.Network{network},
+	}
+
+	require.NoError(t, removeTestContainer(pool, "relayer"))
+
+	// create the proper docker image with port forwarding setup
+	d, err := os.Getwd()
+	require.NoError(t, err)
+
+	buildOpts := &dockertest.BuildOptions{
+		Dockerfile: "integration/setup/Dockerfile.relayer",
+		ContextDir: path.Dir(d),
+	}
+	resource, err := pool.BuildAndRunWithBuildOptions(buildOpts, dockerOpts)
+	require.NoError(t, err)
+
+	t.Log(fmt.Sprintf("- [%s] SPUN UP IN CONTAINER %s from %s", "relayer",
+		resource.Container.Name, resource.Container.Config.Image))
+
+	// start the wait for cleanup function
+	go cleanUpTest(t, testsDone, contDone, []*dockertest.Resource{resource}, pool, []testChain{})
+
+	// set the test cleanup function
+	t.Cleanup(func() {
+		testsDone <- struct{}{}
+		<-contDone
+	})
+
+	return resource
 }

@@ -31,7 +31,7 @@ func getInsertQueryValue(index string, chain testChain) string {
 
 	value += `]', 
 	ARRAY['feeaddress'], 'genesis_hash', 
-	'{"endpoint":"http://localhost:` + chain.rpcPort + `","chain_id":"` + chain.chainID + `","bech32_config":{"main_prefix":"main_prefix","prefix_account":"` + chain.accountInfo.prefix + `","prefix_validator":"prefix_validator",
+	'{"endpoint":"http://` + chain.nodeAddress + `:` + defaultRPCPort + `","chain_id":"` + chain.chainID + `","bech32_config":{"main_prefix":"main_prefix","prefix_account":"` + chain.accountInfo.prefix + `","prefix_validator":"prefix_validator",
 	"prefix_consensus":"prefix_consensus","prefix_public":"prefix_public","prefix_operator":"prefix_operator"}}', 
 	'm/44''/118''/0''/0/0')`
 	return value
@@ -80,4 +80,12 @@ func getEventValueFromTx(tx sdk.TxResponse, eventType, attributeKey string) stri
 	}
 
 	return ""
+}
+
+func getRPCAddress(nodeAddr, port string) string {
+	return fmt.Sprintf("http://%s:%s", nodeAddr, defaultRPCPort)
+}
+
+func getGRPCAddress(nodeAddr, port string) string {
+	return fmt.Sprintf("%s:%s", nodeAddr, defaultGRPCPort)
 }

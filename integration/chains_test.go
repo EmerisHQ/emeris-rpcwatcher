@@ -10,8 +10,7 @@ type testChain struct {
 	denoms      []denomInfo
 	dockerfile  string
 	binaryName  string
-	rpcPort     string
-	grpcPort    string
+	nodeAddress string
 	resource    *dockertest.Resource
 	channels    map[string]string
 	// dummy second address to test txs
