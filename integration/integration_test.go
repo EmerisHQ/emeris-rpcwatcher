@@ -205,10 +205,17 @@ func (s *IntegrationTestSuite) TestIBCTimeoutTransfer() {
 	chain1 := s.chains[0]
 	chain2 := s.chains[1]
 
+	stdOut := s.executeDockerCmd(
+		s.relayer,
+		[]string{"rly", "q", "balance", chain1.chainID},
+	)
+
+	initialBalance := stdOut.String()
+
 	amount := "120"
 
 	// test ibc transfer with less packet timeout
-	stdOut := s.executeDockerCmd(
+	stdOut = s.executeDockerCmd(
 		chain1.resource,
 		[]string{chain1.binaryName, "tx", "ibc-transfer", "transfer", defaultPort, chain1.channels[chain2.chainID],
 			chain2.accountInfo.address, fmt.Sprintf("%s%s", amount, chain1.accountInfo.primaryDenom),
@@ -258,6 +265,14 @@ func (s *IntegrationTestSuite) TestIBCTimeoutTransfer() {
 		Status: "Tokens_unlocked_timeout",
 		TxHash: res.Txs[0].TxHash,
 	}))
+
+	// check whether refund is received as tx was timeout transfer
+	stdOut = s.executeDockerCmd(
+		s.relayer,
+		[]string{"rly", "q", "balance", chain1.chainID},
+	)
+	finalBalance := stdOut.String()
+	s.Require().Equal(initialBalance, finalBalance)
 }
 
 func (s *IntegrationTestSuite) TestLiquidityPoolTxs() {
