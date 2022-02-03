@@ -337,6 +337,19 @@ func (s *IntegrationTestSuite) TestLiquidityPoolTxs() {
 	s.Require().NoError(err)
 
 	time.Sleep(15 * time.Second)
+	out = s.executeDockerCmd(chain.resource, []string{chain.binaryName, "q", "tx", txHash})
+	txRes = s.UnmarshalTx(out.Bytes())
+
+	// check stored swap fees
+	offerCoinFee := getEventValueFromTx(txRes, "swap_within_batch", "offer_coin_fee_amount")
+	offerCoinDenom := getEventValueFromTx(txRes, "swap_within_batch", "offer_coin_denom")
+	offerCoinAmountInt, ok := sdk.NewIntFromString(offerCoinFee)
+	s.Require().True(ok)
+	coins := sdk.NewCoins(sdk.NewCoin(offerCoinDenom, offerCoinAmountInt))
+	fees, err := s.store.GetSwapFees(poolID)
+	s.Require().NoError(err)
+	s.Require().Equal(coins.String(), fees.String())
+
 	ticket, err = s.store.Get(store.GetKey(chain.chainID, txHash))
 	s.Require().NoError(err)
 	s.Require().Equal("complete", ticket.Status)
