@@ -9,7 +9,7 @@ replace (
 )
 
 require (
-	github.com/alicebob/miniredis/v2 v2.16.0
+	github.com/alicebob/miniredis/v2 v2.18.0
 	github.com/allinbits/demeris-backend-models v1.0.0
 	github.com/allinbits/emeris-utils v0.1.0
 	github.com/cockroachdb/cockroach-go/v2 v2.2.5
