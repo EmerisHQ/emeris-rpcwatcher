@@ -12,7 +12,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.18.0
 	github.com/allinbits/demeris-backend-models v1.0.1
 	github.com/allinbits/emeris-utils v0.1.0
-	github.com/cockroachdb/cockroach-go/v2 v2.2.5
+	github.com/cockroachdb/cockroach-go/v2 v2.2.8
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gravity-devs/liquidity v1.2.9
