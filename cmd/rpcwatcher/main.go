@@ -25,28 +25,6 @@ import (
 
 var Version = "not specified"
 
-var (
-	eventsToSubTo = []string{rpcwatcher.EventsTx, rpcwatcher.EventsBlock}
-
-	standardMappings = map[string][]rpcwatcher.DataHandler{
-		rpcwatcher.EventsTx: {
-			rpcwatcher.HandleMessage,
-		},
-		rpcwatcher.EventsBlock: {
-			rpcwatcher.HandleNewBlock,
-		},
-	}
-	cosmosHubMappings = map[string][]rpcwatcher.DataHandler{
-		rpcwatcher.EventsTx: {
-			rpcwatcher.HandleMessage,
-		},
-		rpcwatcher.EventsBlock: {
-			rpcwatcher.HandleNewBlock,
-			rpcwatcher.HandleCosmosHubBlock,
-		},
-	}
-)
-
 const grpcPort = 9090
 
 type watcherInstance struct {
@@ -167,18 +145,20 @@ func main() {
 
 func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, config *rpcwatcher.Config, db *database.Instance, s *store.Store,
 	l *zap.SugaredLogger, isNewChain bool) (map[string]cnsmodels.Chain, *rpcwatcher.Watcher, context.CancelFunc, bool) {
-	eventMappings := standardMappings
+	eventMappings := rpcwatcher.StandardMappings
+
+	grpcEndpoint := fmt.Sprintf("%s:%d", chainName, grpcPort)
 
 	if chainName == "cosmos-hub" { // special case, needs to observe new blocks too
-		eventMappings = cosmosHubMappings
+		eventMappings = rpcwatcher.CosmosHubMappings
 
 		// caching node_info for cosmos-hub
 		grpcConn, err := grpc.Dial(
-			fmt.Sprintf("%s:%d", chainName, grpcPort),
+			grpcEndpoint,
 			grpc.WithInsecure(),
 		)
 		if err != nil {
-			l.Errorw("cannot create gRPC client", "error", err, "chain name", chainName, "address", fmt.Sprintf("%s:%d", chainName, grpcPort))
+			l.Errorw("cannot create gRPC client", "error", err, "chain name", chainName, "address", grpcEndpoint)
 		}
 
 		defer func() {
@@ -206,7 +186,7 @@ func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, con
 
 	}
 
-	watcher, err := rpcwatcher.NewWatcher(endpoint(chainName), chainName, l, config.ApiURL, db, s, eventsToSubTo, eventMappings)
+	watcher, err := rpcwatcher.NewWatcher(endpoint(chainName), chainName, l, config.ApiURL, grpcEndpoint, db, s, rpcwatcher.EventsToSubTo, eventMappings)
 
 	if err != nil {
 		if isNewChain {

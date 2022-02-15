@@ -3,7 +3,7 @@ name: Build docker images
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: [Execute tests]
+    workflows: [Tests]
     branches: [main]
     types: [completed]
 
