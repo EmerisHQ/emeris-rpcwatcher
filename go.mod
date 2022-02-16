@@ -10,22 +10,22 @@ replace (
 )
 
 require (
-	github.com/avast/retry-go v2.6.0+incompatible
 	github.com/alicebob/miniredis/v2 v2.18.0
 	github.com/allinbits/demeris-backend-models v1.0.1
 	github.com/allinbits/emeris-utils v1.0.0
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/cockroachdb/cockroach-go/v2 v2.2.8
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/cosmos/relayer v1.0.0-rc1.0.20210426142722-71e9d4d9142e
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gravity-devs/liquidity v1.2.9
-	github.com/ory/dockertest/v3 v3.6.2
-	gopkg.in/yaml.v2 v2.4.0
 	github.com/jackc/pgx/v4 v4.15.0
+	github.com/ory/dockertest/v3 v3.6.2
 	github.com/r3labs/diff v1.1.0
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/tendermint/tendermint v0.34.11
 	go.uber.org/zap v1.21.0
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/grpc v1.43.0
 )
 
@@ -116,8 +116,8 @@ require (
 	github.com/mimoo/StrobeGo v0.0.0-20181016162300-f8f6d4d2b643 // indirect
 	github.com/minio/highwayhash v1.0.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
+	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
@@ -164,8 +164,6 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
