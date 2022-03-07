@@ -12,7 +12,7 @@ replace (
 require (
 	github.com/alicebob/miniredis/v2 v2.18.0
 	github.com/allinbits/demeris-backend-models v1.0.1
-	github.com/allinbits/emeris-utils v1.1.1
+	github.com/allinbits/emeris-utils v1.2.0
 	github.com/avast/retry-go v2.6.0+incompatible
 	github.com/cockroachdb/cockroach-go/v2 v2.2.8
 	github.com/cosmos/cosmos-sdk v0.42.8
