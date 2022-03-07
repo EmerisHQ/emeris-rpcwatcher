@@ -1,13 +1,11 @@
 package rpcwatcher
 
 import (
-	"log"
 	"os"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	dbutils "github.com/allinbits/emeris-utils/database"
 	"github.com/allinbits/emeris-utils/logging"
 	"github.com/allinbits/emeris-utils/store"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
@@ -28,7 +26,7 @@ var (
 func TestMain(m *testing.M) {
 	// setup test DB
 	var ts testserver.TestServer
-	ts, dbInstance = setupDB()
+	ts, dbInstance = database.SetupTestDB(database.TestDBMigrations)
 	defer ts.Stop()
 
 	// logger
@@ -42,31 +40,6 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	defer mr.Close()
 	os.Exit(code)
-}
-
-func setupDB() (testserver.TestServer, *database.Instance) {
-	// start new cockroachDB test server
-	ts, err := testserver.NewTestServer()
-	checkNoError(err)
-
-	err = ts.WaitForInit()
-	checkNoError(err)
-
-	// create new instance of db
-	i, err := database.New(ts.PGURL().String())
-	checkNoError(err)
-
-	// create and insert data into db
-	err = dbutils.RunMigrations(ts.PGURL().String(), testDBMigrations)
-	checkNoError(err)
-
-	return ts, i
-}
-
-func checkNoError(err error) {
-	if err != nil {
-		log.Fatalf("got error: %s", err)
-	}
 }
 
 func TestHandleMessage(t *testing.T) {
@@ -183,10 +156,10 @@ func TestHandleMessage(t *testing.T) {
 				l:     tt.logger,
 				d:     dbInstance,
 				store: s,
-				Name:  defaultChainName,
+				Name:  database.TestChainName,
 			}
 			require.NoError(t, s.CreateTicket(watcherInstance.Name, tt.txHash, testOwner))
-			key := store.GetKey(defaultChainName, tt.txHash)
+			key := store.GetKey(database.TestChainName, tt.txHash)
 			tt.validateFn(t, watcherInstance, tt.event, key)
 			if tt.expStatus != "" {
 				ticket, err := s.Get(key)
@@ -228,12 +201,12 @@ func TestHandleCosmosHubLPCreated(t *testing.T) {
 		l:     logger,
 		d:     dbInstance,
 		store: s,
-		Name:  defaultChainName,
+		Name:  database.TestChainName,
 	}
 
 	re := createPoolEvent(t, true)
 	require.NoError(t, s.CreateTicket(watcherInstance.Name, createPoolTxHash, testOwner))
-	key := store.GetKey(defaultChainName, createPoolTxHash)
+	key := store.GetKey(database.TestChainName, createPoolTxHash)
 
 	tests := []struct {
 		name        string
@@ -249,13 +222,13 @@ func TestHandleCosmosHubLPCreated(t *testing.T) {
 		},
 		{
 			"Handle Created LP - empty data",
-			defaultChainName,
+			database.TestChainName,
 			coretypes.ResultEvent{},
 			false,
 		},
 		{
 			"Handle Created LP - incomplete data",
-			defaultChainName,
+			database.TestChainName,
 			coretypes.ResultEvent{Events: map[string][]string{
 				"create_pool.pool_coin_denom": {"testpooltoken"},
 			}},
@@ -263,7 +236,7 @@ func TestHandleCosmosHubLPCreated(t *testing.T) {
 		},
 		{
 			"Handle Created LP - valid data",
-			defaultChainName,
+			database.TestChainName,
 			re,
 			true,
 		},
@@ -282,11 +255,11 @@ func TestHandleSwapTransaction(t *testing.T) {
 		l:     logger,
 		d:     dbInstance,
 		store: s,
-		Name:  defaultChainName,
+		Name:  database.TestChainName,
 	}
 
 	re := swapTransactionEvent(t)
-	defaultKey := store.GetKey(defaultChainName, swapTxHash)
+	defaultKey := store.GetKey(database.TestChainName, swapTxHash)
 
 	tests := []struct {
 		name      string
@@ -361,11 +334,11 @@ func TestHandleIBCSenderEvent(t *testing.T) {
 		l:     logger,
 		d:     dbInstance,
 		store: s,
-		Name:  defaultChainName,
+		Name:  database.TestChainName,
 	}
 
 	re := ibcTransferEvent(t)
-	defaultKey := store.GetKey(defaultChainName, ibcTransferTxHash)
+	defaultKey := store.GetKey(database.TestChainName, ibcTransferTxHash)
 
 	tests := []struct {
 		name      string
@@ -415,12 +388,12 @@ func TestHandleIBCReceivePktEvent(t *testing.T) {
 		l:     logger,
 		d:     dbInstance,
 		store: s,
-		Name:  defaultChainName,
+		Name:  database.TestChainName,
 	}
 
 	eventWithSuccessAck := ibcReceivePacketEvent(t, true)
 	eventWithFailedAck := ibcReceivePacketEvent(t, false)
-	defaultKey := store.GetKey(defaultChainName, ibcReceiveTxHash)
+	defaultKey := store.GetKey(database.TestChainName, ibcReceiveTxHash)
 
 	tests := []struct {
 		name       string
@@ -487,13 +460,13 @@ func TestHandleIBCAckPktEvent(t *testing.T) {
 		l:     logger,
 		d:     dbInstance,
 		store: s,
-		Name:  defaultChainName,
+		Name:  database.TestChainName,
 	}
 
 	// creating two receive tx events with different packet acknowledgements
 	eventWithPktError := ibcAckTxEvent(t, true)
 	eventWithoutPktError := ibcAckTxEvent(t, false)
-	defaultKey := store.GetKey(defaultChainName, ibcAckTxHash)
+	defaultKey := store.GetKey(database.TestChainName, ibcAckTxHash)
 
 	tests := []struct {
 		name       string
@@ -552,11 +525,11 @@ func TestHandleIBCTimeoutPktEvent(t *testing.T) {
 		l:     logger,
 		d:     dbInstance,
 		store: s,
-		Name:  defaultChainName,
+		Name:  database.TestChainName,
 	}
 
 	re := ibcTimeoutEvent(t)
-	defaultKey := store.GetKey(defaultChainName, ibcTimeoutTxHash)
+	defaultKey := store.GetKey(database.TestChainName, ibcTimeoutTxHash)
 
 	tests := []struct {
 		name       string
