@@ -10,16 +10,16 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
 
-      - name: Setup token for pulling from allinbits private repos
+      - name: Setup token for pulling from emerishq private repos
         run: |
-          go env -w GOPRIVATE=github.com/allinbits/*
+          go env -w GOPRIVATE=github.com/emerishq/*
           git config --global url."https://git:${{ secrets.TENDERBOT_GIT_TOKEN }}@github.com".insteadOf "https://github.com"
 
       - name: Build
