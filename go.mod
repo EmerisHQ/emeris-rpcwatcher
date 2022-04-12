@@ -13,7 +13,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.18.0
 	github.com/allinbits/demeris-backend-models v1.0.1
 	github.com/allinbits/emeris-utils v1.2.0
-	github.com/avast/retry-go v2.6.0+incompatible
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/cockroachdb/cockroach-go/v2 v2.2.8
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/cosmos/relayer v1.0.0-rc1.0.20210426142722-71e9d4d9142e
