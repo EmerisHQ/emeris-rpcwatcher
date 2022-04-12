@@ -47,6 +47,14 @@ jobs:
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
-          repository: allinbits/demeris-backend
+          repository: emerishq/demeris-backend
           event-type: dev-push-emeris-rpcwatcher
-          client-payload: '{"repo_name":"emeris-rpcwatcher","branch_name":"main","image_name":"emeris-rpcwatcher","image_sha":"${{ github.sha }}","service_name":"emeris-rpcwatcher"}'
+          client-payload: |
+            {
+              "repo_name":"emeris-rpcwatcher",
+              "branch_name":"main",
+              "image_name":"emeris-rpcwatcher",
+              "image_sha":"${{ github.sha }}",
+              "service_name":"emeris-rpcwatcher",
+              "deploy_type":"deploy_dev"
+            }
