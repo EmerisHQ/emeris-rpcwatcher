@@ -3,7 +3,7 @@ name: Build docker images
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: [Execute tests]
+    workflows: [Tests]
     branches: [main]
     types: [completed]
 
@@ -12,7 +12,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -44,9 +44,17 @@ jobs:
 
     steps:
       - name: Call repository_dispatch on demeris-backend
-        uses: peter-evans/repository-dispatch@v1
+        uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
-          repository: allinbits/demeris-backend
+          repository: emerishq/demeris-backend
           event-type: dev-push-emeris-rpcwatcher
-          client-payload: '{"repo_name":"emeris-rpcwatcher","branch_name":"main","image_name":"emeris-rpcwatcher","image_sha":"${{ github.sha }}","service_name":"emeris-rpcwatcher"}'
+          client-payload: |
+            {
+              "repo_name":"emeris-rpcwatcher",
+              "branch_name":"main",
+              "image_name":"emeris-rpcwatcher",
+              "image_sha":"${{ github.sha }}",
+              "service_name":"emeris-rpcwatcher",
+              "deploy_type":"deploy_dev"
+            }

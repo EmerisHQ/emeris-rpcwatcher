@@ -11,39 +11,21 @@ import (
 
 	"github.com/r3labs/diff"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher"
 	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
 	"github.com/allinbits/emeris-utils/logging"
 	"github.com/allinbits/emeris-utils/store"
+	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 
 	_ "net/http/pprof"
 )
 
 var Version = "not specified"
 
-var (
-	eventsToSubTo = []string{rpcwatcher.EventsTx, rpcwatcher.EventsBlock}
-
-	standardMappings = map[string][]rpcwatcher.DataHandler{
-		rpcwatcher.EventsTx: {
-			rpcwatcher.HandleMessage,
-		},
-		rpcwatcher.EventsBlock: {
-			rpcwatcher.HandleNewBlock,
-		},
-	}
-	cosmosHubMappings = map[string][]rpcwatcher.DataHandler{
-		rpcwatcher.EventsTx: {
-			rpcwatcher.HandleMessage,
-		},
-		rpcwatcher.EventsBlock: {
-			rpcwatcher.HandleNewBlock,
-			rpcwatcher.HandleCosmosHubBlock,
-		},
-	}
-)
+const grpcPort = 9090
 
 type watcherInstance struct {
 	watcher *rpcwatcher.Watcher
@@ -163,13 +145,48 @@ func main() {
 
 func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, config *rpcwatcher.Config, db *database.Instance, s *store.Store,
 	l *zap.SugaredLogger, isNewChain bool) (map[string]cnsmodels.Chain, *rpcwatcher.Watcher, context.CancelFunc, bool) {
-	eventMappings := standardMappings
+	eventMappings := rpcwatcher.StandardMappings
+
+	grpcEndpoint := fmt.Sprintf("%s:%d", chainName, grpcPort)
 
 	if chainName == "cosmos-hub" { // special case, needs to observe new blocks too
-		eventMappings = cosmosHubMappings
+		eventMappings = rpcwatcher.CosmosHubMappings
+
+		// caching node_info for cosmos-hub
+		grpcConn, err := grpc.Dial(
+			grpcEndpoint,
+			grpc.WithInsecure(),
+		)
+		if err != nil {
+			l.Errorw("cannot create gRPC client", "error", err, "chain name", chainName, "address", grpcEndpoint)
+		}
+
+		defer func() {
+			if err := grpcConn.Close(); err != nil {
+				l.Errorw("cannot close gRPC client", "error", err, "chain_name", chainName)
+			}
+		}()
+
+		nodeInfoQuery := tmservice.NewServiceClient(grpcConn)
+		nodeInfoRes, err := nodeInfoQuery.GetNodeInfo(context.Background(), &tmservice.GetNodeInfoRequest{})
+		if err != nil {
+			l.Errorw("cannot get node info", "error", err)
+		}
+
+		bz, err := s.Cdc.MarshalJSON(nodeInfoRes)
+		if err != nil {
+			l.Errorw("cannot marshal node info", "error", err)
+		}
+
+		// caching node info
+		err = s.SetWithExpiry("node_info", string(bz), 0)
+		if err != nil {
+			l.Errorw("cannot set node info", "error", err)
+		}
+
 	}
 
-	watcher, err := rpcwatcher.NewWatcher(endpoint(chainName), chainName, l, config.ApiURL, db, s, eventsToSubTo, eventMappings)
+	watcher, err := rpcwatcher.NewWatcher(endpoint(chainName), chainName, l, config.ApiURL, grpcEndpoint, db, s, rpcwatcher.EventsToSubTo, eventMappings)
 
 	if err != nil {
 		if isNewChain {
@@ -192,6 +209,7 @@ func startNewWatcher(chainName string, chainsMap map[string]cnsmodels.Chain, con
 	}
 
 	l.Debugw("connected", "chainName", chainName)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	rpcwatcher.Start(watcher, ctx)
 

@@ -2,9 +2,11 @@ package database
 
 import (
 	"fmt"
+	"log"
 
 	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	dbutils "github.com/allinbits/emeris-utils/database"
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
@@ -36,6 +38,13 @@ func (i *Instance) UpdateDenoms(chain cnsmodels.Chain) error {
 		return err
 	}
 
+	defer func() {
+		err := n.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	res, err := n.Exec(chain)
 
 	if err != nil {
@@ -46,11 +55,6 @@ func (i *Instance) UpdateDenoms(chain cnsmodels.Chain) error {
 
 	if rows == 0 {
 		return fmt.Errorf("database update statement had no effect")
-	}
-
-	err = n.Close()
-	if err != nil {
-		return nil
 	}
 
 	return nil
@@ -78,6 +82,13 @@ func (i *Instance) GetCounterParty(chain, srcChannel string) ([]cnsmodels.Channe
 		return []cnsmodels.ChannelQuery{}, err
 	}
 
+	defer func() {
+		err := q.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	if err := q.Select(&c, map[string]interface{}{
 		"chain_name": chain,
 		"channel":    srcChannel,
@@ -89,10 +100,30 @@ func (i *Instance) GetCounterParty(chain, srcChannel string) ([]cnsmodels.Channe
 		return nil, fmt.Errorf("no counterparty found for chain %s on channel %s", chain, srcChannel)
 	}
 
-	err = q.Close()
-	if err != nil {
-		return nil, nil
-	}
-
 	return c, nil
+}
+
+func SetupTestDB(migrations []string) (testserver.TestServer, *Instance) {
+	// start new cockroachDB test server
+	ts, err := testserver.NewTestServer()
+	checkNoError(err)
+
+	err = ts.WaitForInit()
+	checkNoError(err)
+
+	// create new instance of db
+	i, err := New(ts.PGURL().String())
+	checkNoError(err)
+
+	// create and insert data into db
+	err = dbutils.RunMigrations(ts.PGURL().String(), migrations)
+	checkNoError(err)
+
+	return ts, i
+}
+
+func checkNoError(err error) {
+	if err != nil {
+		log.Fatalf("got error: %s", err)
+	}
 }

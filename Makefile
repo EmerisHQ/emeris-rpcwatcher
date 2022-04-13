@@ -12,7 +12,10 @@ clean:
 	@rm -rf build
 
 test:
-	go test -v -race ./...
+	go test -v -race ./... -cover
+
+integration-test:
+	go test -timeout 15m -v ${BASEPKG}/integration
 
 lint:
 	golangci-lint run ./...

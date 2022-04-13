@@ -1,0 +1,36 @@
+FROM golang:1.17-alpine as BUILD
+
+# Set up dependencies
+ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
+
+WORKDIR /gaiad
+
+RUN apk update && \
+    apk --no-cache add $PACKAGES
+
+RUN git clone https://github.com/cosmos/gaia.git
+
+WORKDIR /gaiad/gaia
+
+RUN git checkout v5.0.4 && make install
+
+FROM alpine:latest
+
+ENV GAIADIR /gaiad/gaia
+
+# Define working directory
+WORKDIR $GAIADIR
+
+# Copy binary from BUILD
+COPY --from=BUILD /go/bin/gaiad /usr/bin/gaiad
+
+USER root
+
+COPY integration/setup/gaia-setup.sh .
+
+RUN chmod 777 gaia-setup.sh
+
+EXPOSE 26657
+
+ENTRYPOINT [ "./gaia-setup.sh" ]
+# NOTE: to run this image, docker run -d -p 26657:26657 ./gaia-setup.sh {{chain_id}} {{genesis_account}} {{seeds}} {{priv_validator_key_path}}

@@ -30,12 +30,33 @@ const nonZeroCodeErrFmt = "non-zero code on chain %s: %s"
 const (
 	EventsTx                = "tm.event='Tx'"
 	EventsBlock             = "tm.event='NewBlock'"
-	grpcPort                = 9090
 	defaultWSClientReadWait = 30 * time.Second
 	defaultWatchdogTimeout  = 20 * time.Second
 	defaultReconnectionTime = 15 * time.Second
 	defaultResubscribeSleep = 500 * time.Millisecond
 	defaultTimeGap          = 750 * time.Millisecond
+)
+
+var (
+	EventsToSubTo = []string{EventsTx, EventsBlock}
+
+	StandardMappings = map[string][]DataHandler{
+		EventsTx: {
+			HandleMessage,
+		},
+		EventsBlock: {
+			HandleNewBlock,
+		},
+	}
+	CosmosHubMappings = map[string][]DataHandler{
+		EventsTx: {
+			HandleMessage,
+		},
+		EventsBlock: {
+			HandleNewBlock,
+			HandleCosmosHubBlock,
+		},
+	}
 )
 
 type DataHandler func(watcher *Watcher, event coretypes.ResultEvent)
@@ -78,6 +99,7 @@ type Watcher struct {
 	store             *store.Store
 	runContext        context.Context
 	endpoint          string
+	grpcEndpoint      string
 	subs              []string
 	stopReadChannel   chan struct{}
 	stopErrorChannel  chan struct{}
@@ -87,7 +109,7 @@ type Watcher struct {
 func NewWatcher(
 	endpoint, chainName string,
 	logger *zap.SugaredLogger,
-	apiUrl string,
+	apiUrl, grpcEndpoint string,
 	db *database.Instance,
 	s *store.Store,
 	subscriptions []string,
@@ -133,6 +155,7 @@ func NewWatcher(
 		store:             s,
 		Name:              chainName,
 		endpoint:          endpoint,
+		grpcEndpoint:      grpcEndpoint,
 		subs:              subscriptions,
 		eventTypeMappings: eventTypeMappings,
 		stopReadChannel:   make(chan struct{}),
@@ -243,7 +266,7 @@ func resubscribe(w *Watcher) {
 		count++
 		w.l.Debugw("this is count", "count", count)
 
-		ww, err := NewWatcher(w.endpoint, w.Name, w.l, w.apiUrl, w.d, w.store, w.subs, w.eventTypeMappings)
+		ww, err := NewWatcher(w.endpoint, w.Name, w.l, w.apiUrl, w.grpcEndpoint, w.d, w.store, w.subs, w.eventTypeMappings)
 		if err != nil {
 			w.l.Errorw("cannot resubscribe to chain", "name", w.Name, "endpoint", w.endpoint, "error", err)
 			continue
@@ -436,12 +459,19 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 
 	// creating a grpc ClientConn to perform RPCs
 	grpcConn, err := grpc.Dial(
-		fmt.Sprintf("%s:%d", w.Name, grpcPort),
+		w.grpcEndpoint,
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		w.l.Errorw("cannot create gRPC client", "error", err, "chain name", w.Name, "address", fmt.Sprintf("%s:%d", w.Name, grpcPort))
+		w.l.Errorw("cannot create gRPC client", "error", err, "chain_name", w.Name, "address", w.grpcEndpoint)
+		return
 	}
+
+	defer func() {
+		if err := grpcConn.Close(); err != nil {
+			w.l.Errorw("cannot close gRPC client", "error", err, "chain_name", w.Name)
+		}
+	}()
 
 	liquidityQuery := liquiditytypes.NewQueryClient(grpcConn)
 	poolsRes, err := liquidityQuery.LiquidityPools(context.Background(), &liquiditytypes.QueryLiquidityPoolsRequest{})
@@ -467,7 +497,7 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 
 	bz, err = w.store.Cdc.MarshalJSON(paramsRes)
 	if err != nil {
-		w.l.Errorw("cannot unmarshal liquidity params", "error", err, "height", newHeight)
+		w.l.Errorw("cannot marshal liquidity params", "error", err, "height", newHeight)
 	}
 
 	// caching liquidity params
@@ -479,12 +509,12 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 	supplyQuery := banktypes.NewQueryClient(grpcConn)
 	supplyRes, err := supplyQuery.TotalSupply(context.Background(), &banktypes.QueryTotalSupplyRequest{})
 	if err != nil {
-		w.l.Errorw("cannot get liquidity pools in blocks", "error", err, "height", newHeight)
+		w.l.Errorw("cannot get total supply", "error", err, "height", newHeight)
 	}
 
 	bz, err = w.store.Cdc.MarshalJSON(supplyRes)
 	if err != nil {
-		w.l.Errorw("cannot unmarshal total supply", "error", err, "height", newHeight)
+		w.l.Errorw("cannot marshal total supply", "error", err, "height", newHeight)
 	}
 
 	// caching total supply
@@ -494,10 +524,26 @@ func HandleCosmosHubBlock(w *Watcher, data coretypes.ResultEvent) {
 	}
 }
 
-func HandleNewBlock(w *Watcher, _ coretypes.ResultEvent) {
+func HandleNewBlock(w *Watcher, data coretypes.ResultEvent) {
 	w.watchdog.Ping()
 	w.l.Debugw("performed watchdog ping", "chain_name", w.Name)
 	w.l.Debugw("new block", "chain_name", w.Name)
+
+	realData, ok := data.Data.(types.EventDataNewBlock)
+	if !ok {
+		panic("rpc returned block data which is not of expected type")
+	}
+
+	if realData.Block == nil {
+		w.l.Warnw("weird block received on rpc, it was empty while it shouldn't", "chain_name", w.Name)
+	}
+
+	b := store.NewBlocks(w.store)
+
+	if err := b.SetLastBlockTime(realData.Block.Time, realData.Block.Height); err != nil {
+		w.l.Errorw("cannot write last block time to store", "chain_name", w.Name, "error", err)
+		return
+	}
 }
 
 func HandleCosmosHubLPCreated(w *Watcher, data coretypes.ResultEvent, chainName, key string, height int64) {
@@ -609,6 +655,7 @@ func HandleIBCSenderEvent(w *Watcher, data coretypes.ResultEvent, chainName, txH
 }
 
 func HandleIBCReceivePacket(w *Watcher, data coretypes.ResultEvent, chainName, txHash string, height int64) {
+	w.l.Debugw("called HandleIBCReceivePacket")
 	recvPacketSourcePort, ok := data.Events["recv_packet.packet_src_port"]
 	if !ok {
 		w.l.Errorf("recv_packet.packet_src_port not found")
@@ -693,6 +740,7 @@ func HandleIBCTimeoutPacket(w *Watcher, data coretypes.ResultEvent, chainName, t
 }
 
 func HandleIBCAckPacket(w *Watcher, data coretypes.ResultEvent, chainName, txHash string, height int64) {
+	w.l.Debugw("called HandleIBCAckPacket")
 	ackPacketSourceChannel, ok := data.Events["acknowledge_packet.packet_src_channel"]
 	if !ok {
 		w.l.Errorf("acknowledge_packet.packet_src_channel not found")
