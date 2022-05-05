@@ -13,12 +13,12 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
-	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher"
-	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	"github.com/allinbits/emeris-utils/logging"
-	"github.com/allinbits/emeris-utils/store"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	cnsmodels "github.com/emerishq/demeris-backend-models/cns"
+	"github.com/emerishq/emeris-rpcwatcher/rpcwatcher"
+	"github.com/emerishq/emeris-rpcwatcher/rpcwatcher/database"
+	"github.com/emerishq/emeris-utils/logging"
+	"github.com/emerishq/emeris-utils/store"
 
 	_ "net/http/pprof"
 )

@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	"github.com/allinbits/emeris-utils/store"
+	"github.com/emerishq/emeris-rpcwatcher/rpcwatcher/database"
+	"github.com/emerishq/emeris-utils/store"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	liquiditytypes "github.com/gravity-devs/liquidity/x/liquidity/types"

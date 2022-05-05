@@ -1,8 +1,8 @@
-FROM golang:1.17 as builder
+FROM golang:1.18 as builder
 
 ARG GIT_TOKEN
 
-RUN go env -w GOPRIVATE=github.com/allinbits/*
+RUN go env -w GOPRIVATE=github.com/emerishq/*
 RUN git config --global url."https://git:${GIT_TOKEN}@github.com".insteadOf "https://github.com"
 
 WORKDIR /app

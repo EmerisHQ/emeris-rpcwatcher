@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	cnsmodels "github.com/emerishq/demeris-backend-models/cns"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +13,7 @@ import (
 var dbInstance *Instance
 
 // TODO: remove duplicate setupDB function in watcher_test.go
-// once https://github.com/allinbits/emeris-rpcwatcher/pull/5 is merged
+// once https://github.com/emerishq/emeris-rpcwatcher/pull/5 is merged
 func TestMain(m *testing.M) {
 	// setup test DB
 	var ts testserver.TestServer

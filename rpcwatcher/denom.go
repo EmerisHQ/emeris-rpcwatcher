@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
-	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	cnsmodels "github.com/emerishq/demeris-backend-models/cns"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
