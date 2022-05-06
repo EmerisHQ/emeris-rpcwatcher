@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	"github.com/allinbits/emeris-utils/logging"
-	"github.com/allinbits/emeris-utils/store"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/emerishq/emeris-rpcwatcher/rpcwatcher/database"
+	"github.com/emerishq/emeris-utils/logging"
+	"github.com/emerishq/emeris-utils/store"
 	"github.com/stretchr/testify/require"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	"go.uber.org/zap"

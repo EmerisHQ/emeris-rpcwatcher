@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/allinbits/emeris-rpcwatcher/rpcwatcher/database"
-	"github.com/allinbits/emeris-utils/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/emerishq/emeris-rpcwatcher/rpcwatcher/database"
+	"github.com/emerishq/emeris-utils/store"
 )
 
 func getInsertQueryValue(index string, chain testChain) string {

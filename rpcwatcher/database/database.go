@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	cnsmodels "github.com/allinbits/demeris-backend-models/cns"
-	dbutils "github.com/allinbits/emeris-utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	cnsmodels "github.com/emerishq/demeris-backend-models/cns"
+	dbutils "github.com/emerishq/emeris-utils/database"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
